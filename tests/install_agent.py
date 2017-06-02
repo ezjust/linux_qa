@@ -13,28 +13,42 @@ class newclass():
     pass
 
 
-class InstallAgent(Agentinstall):
+class InstallAgent(Repoinstall, SystemUtils):
     build = "7.0.0"
     link = None
 
     def __init__(self):
-        super(Agentinstall, self).__init__()
+        super(Repoinstall, self).__init__()
 
     def setUp(self):
-        pass
+        self.uninstall_agent()
 
     def tearDown(self):
-        pass
+
+        os.remove(self.repo_path)
+        self.uninstall_agent()
+        #print("The agent uninstall has been completed")
 
     def runTest(self):
 
-        print(sys.platform, "this is platform")
-        print(sys.api_version, "this is api_version")
-
+        #print(sys.platform, "this is platform")
+        #print(sys.api_version, "this is api_version")
+        self.status_of_the_service('rapidrecovery-agent' , 3) #error code 3 is received when service is not running for systemctl
         self.create_link()
         self.download_file()
-        self.run_installer()
-        print("The testing of the install_agent is completed", end='\n\n')
+        self.install_agent_fromrepo()
+        self.check_package_installed('rapidrecovery-repo', True)
+        self.check_package_installed('rapidrecovery-agent', True)
+        self.check_package_installed('rapidrecovery-mono', True)
+        self.check_package_installed('dkms', True)
+        self.status_of_the_service('rapidrecovery-agent', 3) # Agent should not be started right after install. It should be started only after configuring.
+        self.status_of_the_service('rapidrecovery-mapper', 3)
+        self.status_of_the_service('rapidrecovery-vdisk', 3)
+        self.status_of_the_service('ssh', 0)
+
+
+
+        #print("The testing of the install_agent is completed", end='\n\n')
 
 
 

@@ -4,30 +4,43 @@ import os
 import pkgutil
 import ConfigParser
 from my_utils.system import Executor
-from tests.install_agent import InstallAgent
+from tests.install_repo import InstallRepo
+from tests.install_agent import *
+
+class TestsStat(object):
+    started = 0
+    passed = 0
+    failed = 0
+    def add(self, stat):
+        self.started += stat.started
+        self.passed += stat.passed
+        self.failed += stat.failed
+
 
 
 def get_class_name(mod_name):
-    """ Return the class name from a plugin name """
-    output = ""
+        """ Return the class name from a plugin name """
+        output = ""
 
-    # Split on the _
-    words = mod_name.split("_")[0:]
+        # Split on the _
+        words = mod_name.split("_")[0:]
 
-    # Capitalise the first letter of each word and add to string
-    for word in words:
-        output += word.title()
+        # Capitalise the first letter of each word and add to string
+        for word in words:
+            output += word.title()
 
-    return output
+        return output
 
 class TestRunner(object):
 
     conf_file = None
     test_classes = {}
     test_modules = {}
+    executor = Executor()
 
     def __init__(self):
-        self.executor = Executor()
+        self.success_count = 0
+        self.fail_count = 0
 
     def get_tests_list(self):
         # Read tests directory and import test classes
@@ -57,7 +70,6 @@ class TestRunner(object):
 
     def setup(self):
         self.get_tests_list()
-        pass
 
     def teardown(self):
         pass
@@ -65,18 +77,46 @@ class TestRunner(object):
 
 
     def run_tests(self):
+        result = True
+        stat_loops = TestsStat()
         self.setup()
         self.read_cfg()
-
         for key, value in self.test_list.items():
-          #  if key == "InstallAgent" and int(value) == 1:
+            #  if key == "InstallAgent" and int(value) == 1:
             if int(value) == 1:
-                test = self.test_classes[key]()
-                test.setUp()
-                test.runTest()
-                test.tearDown()
+                # print(self.test_classes[key])
+                result = None
+                try:
+                    self.executor.log("%s test :" % key)
+                    test = self.test_classes[key]()
+                    self.executor.log("Setting Up %s test ....." % (key)),
+                    test.setUp()
+                    self.executor.log("Done")
+                    self.executor.log("Running %s test ........" % key),
+                    stat_loops.started +=1 #increment started count before runTest and after setUp
+                    self.executor.log("Done")
+                    test.runTest()
+                    self.executor.log("Completed %s test ......" % key),
+                    stat_loops.passed +=1 #increment passed in case if run
+                    self.executor.log("Done")
+                    #print("%s" % ('Test %s is: ''OK') % key)
+                    result = "passed"
+                except Exception as e:
+                    stat_loops.failed +=1
+                    self.executor.log(e)
+                    #print("%s" % ('Test %s is: ''FAIL') % key)
+                    result = "failed"
+                finally:
+                    self.executor.log("Cleaning Up %s test ...." % key),
+                    test.tearDown()
+                    self.executor.log("Done")
+                print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
 
-            #    test = self.test_classes[key]()
-            #   test.runTest()
+        self.executor.log("\vTests are finished. %d are OK, %d are FAILED\n" % (stat_loops.passed, stat_loops.failed))
+
+        #    test = self.test_classes[key]()
+        #   test.runTest()
+
+
 
 
