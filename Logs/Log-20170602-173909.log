@@ -1,0 +1,1 @@
+17:39:09 | UninstallAgent test :17:39:09 | Setting Up UninstallAgent test .....17:39:32 | Done17:39:32 | Running UninstallAgent test ........17:39:32 | Done17:40:05 | dpkg --list | grep dkms | awk '{print $2}' package is installed. But should NOT be installed.17:40:05 | Cleaning Up UninstallAgent test ....17:40:05 | Done17:40:05 | Tests are finished. 0 are OK, 1 are FAILED

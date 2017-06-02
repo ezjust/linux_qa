@@ -85,8 +85,10 @@ class Executor(object):
                 p_status = p.wait()
                 # error_code = p.communicate()[0]
                 print("%s :: I am in %s retry. 100 error core is received for '%s' command" % (time.ctime(), count, self.cmd))
+                print(err)
                 count+=1
                 time.sleep(20)
+                return err
             return (output, err)
         else:
             return (output, err)
@@ -283,8 +285,9 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         return self.execute.execute(self.cmd)
 
     def get_installed_package(self, cmd):
-        self.cmd = self.installed_package() + " | " + "grep " + cmd + " | awk '{print $2}'"
-        return self.execute.execute(self.cmd)
+        self.cmd = cmd
+        self.command = self.installed_package() + " | " + "grep " + self.cmd + " | awk '{print $2}'"
+        return self.execute.execute(self.command)
 
     def get_service_status(self, cmd):
         pass

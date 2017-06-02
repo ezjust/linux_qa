@@ -1,0 +1,1 @@
+17:49:14 | UninstallAgent test :17:49:14 | Setting Up UninstallAgent test .....17:50:59 | Done17:50:59 | Running UninstallAgent test ........17:50:59 | Done17:51:29 | dkms package is installed. But should NOT be installed.17:51:29 | Cleaning Up UninstallAgent test ....17:51:29 | Done17:51:29 | Tests are finished. 0 are OK, 1 are FAILED
