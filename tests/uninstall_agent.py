@@ -1,8 +1,4 @@
-import os
-import sys
-from my_utils.system import Executor, Repoinstall, SystemUtils
-#import debug
-#print sys.path
+from my_utils.system import Executor, Repoinstall
 
 
 class UninstallAgent(Repoinstall):
@@ -20,11 +16,7 @@ class UninstallAgent(Repoinstall):
         self.uninstall_agent()
         self.check_package_installed('rapidrecovery-mono', False)
         self.check_package_installed('rapidrecovery-vdisk', False)
-        self.check_package_installed('dkms', False)
-
-
-
-
+        self.check_package_installed('dkms', True) # we aren't remove dkms by default
 
     def tearDown(self):
-        pass
+        self.uninstall_agent()

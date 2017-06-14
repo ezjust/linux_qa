@@ -84,21 +84,21 @@ class TestRunner(object):
         for key, value in self.test_list.items():
             #  if key == "InstallAgent" and int(value) == 1:
             if int(value) == 1:
-                # print(self.test_classes[key])
+                #print(self.test_classes[key])
                 result = None
                 try:
                     self.executor.log("%s test :" % key)
                     test = self.test_classes[key]()
-                    self.executor.log("Setting Up %s test ....." % (key)),
+                    self.executor.log("Setting Up %s test ....." % key)
                     test.setUp()
-                    self.executor.log("Done")
-                    self.executor.log("Running %s test ........" % key),
+                    #self.executor.log("Done")
+                    self.executor.log("Running %s test ........" % key)
                     stat_loops.started +=1 #increment started count before runTest and after setUp
-                    self.executor.log("Done")
+                    #self.executor.log("Done")
                     test.runTest()
-                    self.executor.log("Completed %s test ......" % key),
+                    self.executor.log("Completed %s test ......" % key)
                     stat_loops.passed +=1 #increment passed in case if run
-                    self.executor.log("Done")
+                    #self.executor.log("Done")
                     #print("%s" % ('Test %s is: ''OK') % key)
                     result = "passed"
                 except Exception as e:
@@ -109,7 +109,7 @@ class TestRunner(object):
                 finally:
                     self.executor.log("Cleaning Up %s test ...." % key),
                     test.tearDown()
-                    self.executor.log("Done")
+                    #self.executor.log("Done")
                 print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
 
         self.executor.log("\vTests are finished. %d are OK, %d are FAILED\n" % (stat_loops.passed, stat_loops.failed))

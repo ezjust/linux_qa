@@ -70,6 +70,7 @@ class Executor(object):
             raise Exception("Exception: '%s' command finished with error code %d" %(self.cmd, err))
         elif err is 100:
             count = 0
+            print('This is err %s' % err)
             while err is 100:
 
                 p = subprocess.Popen(self.cmd, shell=True,
@@ -253,6 +254,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         execute.execute(update)
 
     def install_agent_fromrepo(self):
+        self.create_link()
+        self.download_file()
         check = Repoinstall()
         install = check.packmanager() + " -i" + " repo"
         execute = Executor()
@@ -273,7 +276,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         autoremove = self.software_manager() + " autoremove"
         execute.execute(autoremove)
         not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")
-        print(not_removed)
+        #print(not_removed)
 
     def uninstall_repo(self):
         execute = Executor()
@@ -296,7 +299,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         # self.getinstalledpackage(cmd)
         self.cmd = cmd
         self.result = result
-        if self.result is "True":
+        if self.result is True:
             if (self.cmd + "\n") in self.get_installed_package(self.cmd)[0]:
                 return
             else:
@@ -331,22 +334,66 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         self.code = code
         if a.check_initd() == 'systemctl':
             command = 'systemctl status %s'% self.cmd
-            if self.execute.error_code(command) is not self.code:
-                raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+            if self.code is not None:
+                if self.execute.error_code(command) is not self.code:
+                    raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
             #return self.execute.error_code(command)
         elif a.check_initd() == '/etc/init.d':
             command = '/etc/init.d/%s status'% self.cmd
-            if self.execute.error_code(command) is not self.code:
-                raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+            if self.code is not None:
+                if self.execute.error_code(command) is not self.code:
+                    raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
             #return self.execute.error_code(command)
         else:
             raise Exception("Pizdec!")
 
 
+    def service_activity(self, cmd, action):
+        a = Repoinstall()
+        self.cmd = cmd
+        self.action = action
+        if a.check_initd() == 'systemctl':
+            command = 'systemctl %s %s' % (self.action, self.cmd)
+            self.execute.execute(command)
+        elif a.check_initd() == '/etc/init.d':
+            command = '/etc/init.d/%s %s' % (self.cmd, self.action)
+            self.execute.execute(command)
+        else:
+            raise Exception("Pizdec!")
 
 
+class Agent(Repoinstall):
+    bsctl_v = "sudo bsctl -v | awk '{print$5}'"
+    rapidrecovery_vss_v = "dmesg | grep 'rapidrecovery-vss: loaded' | tail -n1 | awk '{print$7}'"
+    module_name = "rapidrecovery-vss"
+    check_module_is_loaded = "lsmod | grep rapidrecovery_vss"
+    nbd_check = "ps axf | grep 'nbd[0-9]'; echo $?"
+
+    def file_exists(self, file):
+        self.file = file
+        if os.path.isfile(self.file) is True:
+            return
+        else:
+            raise Exception("%s : File is not exist" % self.file)
+
+    def check_agent_is_running(self):
+        if self.status_of_the_service('rapidrecovery-agent', None) is not 0:
+            self.service_activity('rapidrecovery-agent', 'restart')
+            self.status_of_the_service('rapidrecovery-agent', 0)
+
+    def bsctl_hash(self):
+        bsctl_hash = self.execute.execute(self.bsctl_v)
+        return bsctl_hash
+
+    def rapidrecovery_vss_hash(self):
+        rapidrecovery_vss_hash = self.execute.execute(self.rapidrecovery_vss_v)
+        return rapidrecovery_vss_hash
 
 
+    def unload_module(self):
+        if self.execute.error_code(self.check_module_is_loaded) is 0:
+            self.execute.execute('rmmod ' + self.module_name)
 
-
-
+    def load_module(self):
+        if self.execute.error_code(self.check_module_is_loaded) is not 0:
+            self.execute.execute('modprobe' + self.module_name)
