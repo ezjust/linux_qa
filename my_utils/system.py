@@ -89,7 +89,7 @@ class Executor(object):
                 print(err)
                 count+=1
                 time.sleep(20)
-                return err
+
             return (output, err)
         else:
             return (output, err)
@@ -289,7 +289,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def get_installed_package(self, cmd):
         self.cmd = cmd
-        self.command = self.installed_package() + " | " + "grep " + self.cmd + " | awk '{print $2}'"
+        self.command = self.installed_package() + " | " + "grep " + self.cmd + " | awk '{print $2}' | head -n1"
         return self.execute.execute(self.command)
 
     def get_service_status(self, cmd):
@@ -364,10 +364,11 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
 class Agent(Repoinstall):
     bsctl_v = "sudo bsctl -v | awk '{print$5}'"
-    rapidrecovery_vss_v = "dmesg | grep 'rapidrecovery-vss: loaded' | tail -n1 | awk '{print$7}'"
+    rapidrecovery_vss_v = "dmesg | grep 'rapidrecovery-vss: loaded' | tail -n1 | tr ' ' '\n' | tail -n4 | head -n1"
     module_name = "rapidrecovery-vss"
     check_module_is_loaded = "lsmod | grep rapidrecovery_vss"
     nbd_check = "ps axf | grep 'nbd[0-9]'; echo $?"
+    rapid_vss_installed = "/usr/sbin/dkms status | grep rapidrecovery-vss | tr ' ' '\n' | tail -n1"
 
     def file_exists(self, file):
         self.file = file
@@ -383,9 +384,14 @@ class Agent(Repoinstall):
 
     def bsctl_hash(self):
         bsctl_hash = self.execute.execute(self.bsctl_v)
+        print(bsctl_hash)
         return bsctl_hash
 
     def rapidrecovery_vss_hash(self):
+        result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
+        while len(result) is 0:
+            result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
+            time.sleep(5)
         rapidrecovery_vss_hash = self.execute.execute(self.rapidrecovery_vss_v)
         return rapidrecovery_vss_hash
 
@@ -397,3 +403,8 @@ class Agent(Repoinstall):
     def load_module(self):
         if self.execute.error_code(self.check_module_is_loaded) is not 0:
             self.execute.execute('modprobe' + self.module_name)
+
+    def rapidrecovery_vss_installed(self):
+        result = self.execute.execute(self.rapid_vss_installed)[0][0].rstrip()
+        return result
+

@@ -1,7 +1,6 @@
 import os
 import sys
 from test_runner import TestRunner
-import pytest
 
 __author__ = 'mbugaiov'
 __copyright__ = "Copyright (C) 2017 Quest, Inc.  All rights reserved"

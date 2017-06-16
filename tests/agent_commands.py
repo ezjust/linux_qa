@@ -23,14 +23,23 @@ class AgentCommands(Agent):
         self.check_package_installed('rapidrecovery-repo', True)
         self.check_package_installed('rapidrecovery-agent', True)
         self.check_package_installed('rapidrecovery-mono', True)
+
         self.check_package_installed('dkms', True)
-        self.service_activity('rapidrecovery-agent', 'start') # we are restaring agent
+
+        self.service_activity('rapidrecovery-agent', 'start') # we are restaring agent. Agent has not been configured yet.
         self.status_of_the_service('rapidrecovery-agent', 0) # agent now should be running
         self.status_of_the_service('rapidrecovery-vdisk', 0)
         if self.execute.error_code(self.nbd_check) is not 0:
             raise Exception("ERROR: There are no open nbd device.")
 
+        while str(self.rapidrecovery_vss_installed().rstrip()) != str(
+                "installed"):
+            """We are awiting until rapidrecovery-vss is build on the box"""
+            time.sleep(5)
+            pass
+
         if self.bsctl_hash() != self.rapidrecovery_vss_hash():
+
             """we assume, that if agent is started without configuring, module
             should be loaded automaticaly. Here we are comparing versions
             of the bsctl and rapidrecovery-vss"""
@@ -46,9 +55,13 @@ class AgentCommands(Agent):
         self.status_of_the_service('rapidrecovery-agent', 3) #seems like 3 is return when service is not running. Needs to be clarified.
         self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
 
+        self.service_activity('rapidrecovery-agent', 'start')
+        self.status_of_the_service('rapidrecovery-agent', 0)
 
-        self.service_activity('rapidrecovery-agent', 'reload')
-        self.status_of_the_service('rapidrecovery-agent', 3) #Here is bug : RR-103626. Once is fixed, make sure that agent is running, so, exit code should be 0
+        #self.service_activity('rapidrecovery-agent', 'reload')
+        #print("I am here after reload")
+        #self.status_of_the_service('rapidrecovery-agent', 3) #Here is bug : RR-103626. Once is fixed, make sure that agent is running, so, exit code should be 0
+
         self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
 
 
