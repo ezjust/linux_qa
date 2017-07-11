@@ -114,7 +114,7 @@ if __name__ == '__main__':
         start.start_up()
         start.remove_archive()
     start.parse_box_log()
-    start.remove_archive()
+
 
 
 

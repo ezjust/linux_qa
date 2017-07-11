@@ -23,7 +23,7 @@ class InstallRepo(Repoinstall):
         self.create_link()
         self.download_file()
         self.run_repo_installer()
-        self.get_process_pid(cmd='ssh')
+        #self.get_process_pid(cmd='ssh')
         self.check_package_installed('rapidrecovery-repo', result=True)
 
 

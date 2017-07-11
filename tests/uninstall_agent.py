@@ -14,6 +14,7 @@ class UninstallAgent(Repoinstall):
         execute = Executor()
         execute.execute('ls -1')
         self.uninstall_agent()
+
         self.check_package_installed('rapidrecovery-mono', False)
         self.check_package_installed('rapidrecovery-vdisk', False)
         self.check_package_installed('dkms', True) # we aren't remove dkms by default

@@ -269,14 +269,16 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def uninstall_agent(self):
         execute = Executor()
-        uninstallation_agent = self.software_manager() + " remove" + " " + self.agent
-        execute.execute(uninstallation_agent)
-        unistallation_other = self.software_manager() + " remove" + " rapidrecovery-*"
-        execute.execute(unistallation_other)
-        autoremove = self.software_manager() + " autoremove"
-        execute.execute(autoremove)
-        not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")
-        #print(not_removed)
+
+        if execute.error_code(self.software_manager() + " | grep rapid") == "0" :
+            uninstallation_agent = self.software_manager() + " remove" + " " + self.agent
+            execute.execute(uninstallation_agent)
+            unistallation_other = self.software_manager() + " remove" + " rapidrecovery-*"
+            execute.execute(unistallation_other)
+            autoremove = self.software_manager() + " autoremove"
+            execute.execute(autoremove)
+            not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")
+            #print(not_removed)
 
     def uninstall_repo(self):
         execute = Executor()
@@ -303,12 +305,14 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             if (self.cmd + "\n") in self.get_installed_package(self.cmd)[0]:
                 return
             else:
+                print(self.get_installed_package(self.cmd)[0])
                 raise Exception(
                     "%s package is not installed. But should be installed." % self.cmd)
         else:
             if (self.cmd + "\n") not in self.get_installed_package(self.cmd)[0]:
                 return
             else:
+                print(self.get_installed_package(self.cmd)[0])
                 raise Exception(
                     "%s package is installed. But should NOT be installed." % self.cmd)
 
