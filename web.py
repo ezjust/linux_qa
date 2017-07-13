@@ -76,6 +76,41 @@ class WebAgent(object):
             pass
 
 
+    def find_last_job_id(self):
+        self.driver.get(str(self.agent_link + "/Events"))
+        time.sleep(2)
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.presence_of_element_located((By.ID, "taskGrid")))
+        try:
+            event_grid = self.driver.find_element_by_id(
+                'taskGrid').find_elements_by_tag_name('tr')
+            for elem in event_grid:
+                test = elem.get_attribute('td')
+                # print(elem.text)
+
+            last_job = self.driver.find_element_by_id(
+                'taskGrid').find_elements_by_tag_name('tr')
+            # last_job_attr = last_job[0].get_attribute('td')
+            # for n in last_job:
+            # print(n.get_attribute('id'))
+
+            check = last_job[1]
+            last_job_attr = check.get_attribute('id')
+            last_job_open = self.driver.find_element_by_xpath(
+                ".//*[@id='" + last_job_attr + "']/td[7]/div")
+            print(last_job_attr + " This is job ID of the last event is the events!!!!")
+
+        except selenium.common.exceptions.StaleElementReferenceException:
+            pass
+
+
+
+
+
+
+
+
     def protect_new_agent(self, ip, username, password):
 
         self.ip = ip
@@ -115,8 +150,8 @@ class WebAgent(object):
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='btnWizardDefault']"))) # this part should be rechecked. Since, there is bug.
 
-            WebDriverWait(self.driver, self.short_timeout).until(
-                EC.presence_of_element_located((By.XPATH, ".//*[@id='wizardContentContainer']/div[2]/div[2]/div/div[1]/div/label/span/text()")))
+            # WebDriverWait(self.driver, self.short_timeout).until(
+            #     EC.presence_of_element_located((By.XPATH, ".//*[@id='wizardContentContainer']/div[2]/div[2]/div/div[1]/div/label/span/text()")))
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardBack")))
             back = self.driver.find_element_by_xpath(".//*[@id='btnWizardBack']")
@@ -185,9 +220,9 @@ class WebAgent(object):
             events = self.driver.find_element_by_xpath(".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")
             events.click()
 
-
+            
         finally:
-            print("no alert")
+            pass
             #self.driver.close()
 
 
@@ -353,7 +388,7 @@ class WebAgent(object):
             raise Exception("Unknown status %s for the job %s" % (job_status, job_name))
 
         self.job_status = job_status
-
+        print(self.job_id + " IS JOB ID OF THE LAST RUNNING JOB")
 
     def rollback(self, ip):
         '''In this function we get id of the job from the events of the 
@@ -367,6 +402,7 @@ class WebAgent(object):
 
         self.driver.get(str(self.agent_link + "/RecoveryPoints"))
         time.sleep(7)
+
         WebDriverWait(self.driver, self.short_timeout).until(EC.text_to_be_present_in_element((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span"), "Recovery Points"))
         html = self.driver.page_source
         soup = BeautifulSoup(html, "html.parser")
@@ -376,13 +412,34 @@ class WebAgent(object):
         print(status)
         select = self.driver.find_element_by_xpath(".//*[@id='" + status[5] + "']")
         select.click()
+
         time.sleep(1)
+
+        # dm = self.driver.find_elements_by_class_name("dropdown-menu")
+        # for elem in dm:
+        #     if elem.text is not u'':
+        #         elem.find_element_by_link_text("Restore").click()
+        # time.sleep(7)
+
+        restore_button = None
         dm = self.driver.find_elements_by_class_name("dropdown-menu")
         for elem in dm:
             if elem.text is not u'':
-                elem.find_element_by_link_text("Restore").click()
+                restore_button = elem.find_element_by_link_text("Restore")
+                while restore_button == None:
+                    dm = self.driver.find_elements_by_class_name(
+                        "dropdown-menu")
+                    for elem in dm:
+                        if elem.text is not u'':
+                            restore_button = elem.find_element_by_link_text(
+                                "Restore")
+
+        restore_button.click()
+
         time.sleep(7)
 
+        self.wait_for_element_invisible("lpLoadingContent")
+        WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "btnWizardDefault")))
         next_rollback = self.driver.find_element_by_id("btnWizardDefault")
         next_rollback.click()
@@ -407,18 +464,18 @@ class WebAgent(object):
             time.sleep(1)
 
 
-
+        WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         next_volume_mapping = self.driver.find_element_by_id("btnWizardDefault")
         next_volume_mapping.click()
         time.sleep(1)
 
-
+        WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.ID, "isIUnderstand")))
         WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "isIUnderstand")))
         accept_warning = self.driver.find_element_by_id("isIUnderstand")
         accept_warning.click()
         time.sleep(1)
 
-
+        WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         finish_rollback = self.driver.find_element_by_id("btnWizardDefault")
         finish_rollback.click()
         time.sleep(5)
@@ -427,7 +484,7 @@ class WebAgent(object):
 
 
 if __name__ == "__main__":
-    ip = "10.10.30.153"
+    ip = "10.10.11.200"
     username = "rr"
     password = "123asdQ"
     a = WebAgent()
@@ -438,9 +495,13 @@ if __name__ == "__main__":
         # a.status(ip)
         for i in range(1,10):
             a.protect_new_agent(ip, username, password)
+            a.find_last_job_id()
             a.status(ip)
+            a.find_last_job_id()
             a.rollback(ip)
+            a.find_last_job_id()
             a.status(ip)
+            a.find_last_job_id()
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
