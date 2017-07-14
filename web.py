@@ -21,7 +21,7 @@ link = 'https://10.10.61.30:8006/apprecovery/admin'
 
 
 class WebAgent(object):
-    short_timeout = 20
+    short_timeout = 60
     long_timeout = 200
     agent_link = None
     id_agent = None
@@ -57,7 +57,7 @@ class WebAgent(object):
 
 
     def find_machine_link(self):
-        WebDriverWait(self.driver, self.short_timeout).until(
+        WebDriverWait(self.driver, self.long_timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, 'a')))
         try:
             set_of_machine = self.driver.find_element(By.ID,
@@ -77,6 +77,11 @@ class WebAgent(object):
 
 
     def find_last_job_id(self):
+
+        """We are looking in events the last one job_id. This job_id we can use is compare with the current one job id, to make sure, that we parse the status of the appropriate job.
+        Here is output of the this job id : 405bf1d0-e552-4b3f-8dc6-f8a4f2310d8f
+        """
+        current_page = self.driver.current_url
         self.driver.get(str(self.agent_link + "/Events"))
         time.sleep(2)
 
@@ -99,10 +104,16 @@ class WebAgent(object):
             last_job_attr = check.get_attribute('id')
             last_job_open = self.driver.find_element_by_xpath(
                 ".//*[@id='" + last_job_attr + "']/td[7]/div")
-            print(last_job_attr + " This is job ID of the last event is the events!!!!")
+            print(last_job_attr + " This is job ID of the last event is the events before active call of the new")
+            self.last_job_attr = last_job_attr
+            return self.last_job_attr
+
 
         except selenium.common.exceptions.StaleElementReferenceException:
             pass
+        finally:
+            self.driver.get(current_page)
+            time.sleep(2)
 
 
 
@@ -121,12 +132,12 @@ class WebAgent(object):
 
 
         try:
-
+            print("I am here")
             element = WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
+            WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
@@ -148,11 +159,20 @@ class WebAgent(object):
 
             self.wait_for_element_invisible(element_id="lpLoadingContent")
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='btnWizardDefault']"))) # this part should be rechecked. Since, there is bug.
+            # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='btnWizardDefault']"))) # this part should be rechecked. Since, there is bug.
 
             # WebDriverWait(self.driver, self.short_timeout).until(
             #     EC.presence_of_element_located((By.XPATH, ".//*[@id='wizardContentContainer']/div[2]/div[2]/div/div[1]/div/label/span/text()")))
+            upgrade = self.driver.find_element_by_id("wizardContentContainer")
+            if upgrade is not None:
+                if "The target machine is running an older version of the Quest Rapid Recovery Agent software" in upgrade.text:
+                    click_upgrade = self.driver.find_element_by_id("upgradeAgent")
+                    click_upgrade.click()
 
+                    next_button = self.driver.find_element_by_id("btnWizardDefault")
+                    next_button.click()
+
+            time.sleep(2)
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardBack")))
             back = self.driver.find_element_by_xpath(".//*[@id='btnWizardBack']")
             back.click()
@@ -168,23 +188,17 @@ class WebAgent(object):
 
             self.wait_for_element_invisible(element_id="lpLoadingContent")
 
-
-            # time.sleep(15)
             while self.find_machine_link() is None:
                 print(self.find_machine_link())
                 print("waiting protected machine to appear")
                 time.sleep(1)
             print("New transfer will be started")
 
-            # self.find_machine_link()
-
-            # time.sleep(4)
-
             self.driver.get(str(self.agent_link))
 
-            # time.sleep(2)
+            self.find_last_job_id()
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH ,".//*[@id='volumesGroupsGrid_selectAll_triSpan']")))
+            WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.XPATH ,".//*[@id='volumesGroupsGrid_selectAll_triSpan']")))
             all_volumes = self.driver.find_element_by_xpath(".//*[@id='volumesGroupsGrid_selectAll_triSpan']")
             all_volumes.click()
 
@@ -208,9 +222,9 @@ class WebAgent(object):
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
             force_snapshot.click()
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")))
-            first_force = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")
-            first_force.click()
+            # WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")))
+            # first_force = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")
+            # first_force.click()
 
             print("Transfer forced")
 
@@ -220,18 +234,13 @@ class WebAgent(object):
             events = self.driver.find_element_by_xpath(".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")
             events.click()
 
-            
         finally:
             pass
-            #self.driver.close()
-
 
     def remove_agent_by_id(self, ip):
 
 
         self.ip = ip
-        agent_link = None
-        id_agent = None
 
         try:
 
@@ -272,6 +281,8 @@ class WebAgent(object):
         self.ip = ip
         agent_link = None
         self.status_of_the_job = None
+        job_status = None
+        job_name = None
 
         try:
             self.find_machine_link()
@@ -282,69 +293,80 @@ class WebAgent(object):
         except OSError as e:
             raise Exception("Here is bug in status with the agent link.")
 
-        self.driver.get(str(self.agent_link + "/Events"))
-        time.sleep(2)
+        self.job_id = self.last_job_attr
 
-        # WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((
-        #                                                                     By.XPATH,
-        #                                                                     ".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")))
-        # events = self.driver.find_element_by_xpath(
-        #     ".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")
-        # events.click()
-        # time.sleep(1)
+        while self.job_id in self.last_job_attr: ##here I try to make check, that new job_id is not the same, as old job in events.
 
+            self.driver.get(str(self.agent_link + "/Events"))
+            time.sleep(2)
 
-        WebDriverWait(self.driver, self.short_timeout).until(
-            EC.presence_of_element_located((By.ID, "taskGrid")))
-        try:
-            event_grid = self.driver.find_element_by_id('taskGrid').find_elements_by_tag_name('tr')
-            for elem in event_grid:
-                test = elem.get_attribute('td')
-                # print(elem.text)
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.presence_of_element_located((By.ID, "taskGrid")))
+            try:
+                last_job = self.driver.find_element_by_id(
+                    'taskGrid').find_elements_by_tag_name('tr')
+                check = last_job[1]
+                last_job_attr = check.get_attribute('id')
+                last_job_open = self.driver.find_element_by_xpath(
+                    ".//*[@id='" + last_job_attr + "']/td[7]/div")
+                last_job_open.click()
+            except selenium.common.exceptions.StaleElementReferenceException:
+                pass
 
-            last_job = self.driver.find_element_by_id('taskGrid').find_elements_by_tag_name('tr')
-            # last_job_attr = last_job[0].get_attribute('td')
-            # for n in last_job:
-            # print(n.get_attribute('id'))
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.text_to_be_present_in_element((By.ID, "jqgh_taskGrid_Job"),
+                                                 "Name"))
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.presence_of_element_located((By.ID, "taskMonitorContent")))
 
-            check = last_job[1]
-            last_job_attr = check.get_attribute('id')
-            last_job_open = self.driver.find_element_by_xpath(".//*[@id='" + last_job_attr + "']/td[7]/div")
-            last_job_open.click()
-        except selenium.common.exceptions.StaleElementReferenceException:
-            pass
+            time.sleep(5)
 
-        WebDriverWait(self.driver, self.short_timeout).until(
-            EC.text_to_be_present_in_element((By.ID, "jqgh_taskGrid_Job"), "Name"))
-        WebDriverWait(self.driver, self.short_timeout).until(
-            EC.presence_of_element_located((By.ID, "taskMonitorContent")))
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.presence_of_element_located((By.ID, "taskGrid")))
+            try:
+                event_grid = self.driver.find_element_by_id(
+                    'taskGrid').find_elements_by_tag_name('tr')
+                # for elem in event_grid:
+                    # test = elem.get_attribute('td')
+                    # print(elem.text)
+                last_job = self.driver.find_element_by_id(
+                    'taskGrid').find_elements_by_tag_name('tr')
+                check = last_job[1]
+                last_job_attr = check.get_attribute('id')
+                last_job_open = self.driver.find_element_by_xpath(
+                    ".//*[@id='" + last_job_attr + "']/td[7]/div")
+                last_job_open.click()
+            except selenium.common.exceptions.StaleElementReferenceException:
+                pass
 
-        time.sleep(
-            5)  # without using sleep, there was a bug in the new html. looks like this should be redesigned by adding new element to wait.
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.text_to_be_present_in_element((By.ID, "jqgh_taskGrid_Job"),
+                                                 "Name"))
+            WebDriverWait(self.driver, self.short_timeout).until(
+                EC.presence_of_element_located((By.ID, "taskMonitorContent")))
 
-        # array_of_the_job_results = self.driver.find_element_by_id('taskMonitorContent').find_elements_by_tag_name('dd')
+            time.sleep(5)
 
-        # print(array_of_the_job_results[2].text) # job description
-        # print(array_of_the_job_results[3].text) # date
+            job_name = self.driver.find_element_by_id(
+                'taskMonitorContent').find_elements_by_tag_name('dd')[2].text
+            job_status = self.driver.find_element_by_id(
+                'taskMonitorContent').find_elements_by_tag_name('dd')[1].text
 
-        job_name = self.driver.find_element_by_id(
-            'taskMonitorContent').find_elements_by_tag_name('dd')[2].text
-        job_status = self.driver.find_element_by_id(
-            'taskMonitorContent').find_elements_by_tag_name('dd')[1].text
+            # print(job_status)  # here we get job status of the action
+            if job_status not in ("Succeeded", "Error"):
+                self.job_id = self.driver.find_element_by_id(
+                    'taskMonitorContent').find_elements_by_tag_name('dd')[
+                    0].text
+            else:
+                html = self.driver.page_source
+                soup = BeautifulSoup(html, "html.parser")
+                substring = soup.find_all('a', {"class": "pointer"})
+                # print(substring[2])
+                substring = str(substring[2]).split('"')[5]
+                self.job_id = substring  # returned correct job_id only when job is completed.
+            print(
+                "This is job id of the task: %s" % self.job_id)
 
-        print(job_status) # here we get job status of the action
-        if job_status not in ("Succeeded", "Error"):
-            self.job_id = self.driver.find_element_by_id(
-            'taskMonitorContent').find_elements_by_tag_name('dd')[0].text
-        else:
-            html = self.driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
-            substring = soup.find_all('a', {"class": "pointer"})
-            #print(substring[2])
-            substring = str(substring[2]).split('"')[5]
-            self.job_id = substring  # returned correct job_id only when job is completed.
-        print(
-        "This is job id of the task: %s" % self.job_id)
 
         WebDriverWait(self.driver, self.short_timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, 'a')))
@@ -356,8 +378,8 @@ class WebAgent(object):
                 test = elem.get_attribute('href')
                 if elem.text in self.ip:
                     agent_link = test
-                    id = re.split('Machines/*', agent_link)[1]
-                    print("AGENT LINK", agent_link)
+                    # id = re.split('Machines/*', agent_link)[1]
+                    # print("AGENT LINK", agent_link)
 
         except selenium.common.exceptions.StaleElementReferenceException:
             pass
@@ -397,6 +419,8 @@ class WebAgent(object):
               status of the job.'''
         self.ip = ip
         agent_link = None
+
+        self.find_last_job_id()
 
         self.find_machine_link()
 
@@ -481,10 +505,10 @@ class WebAgent(object):
         time.sleep(5)
         print("COMPLETED ROLLBACK")
 
-
+        
 
 if __name__ == "__main__":
-    ip = "10.10.11.200"
+    ip = "10.10.30.153"
     username = "rr"
     password = "123asdQ"
     a = WebAgent()
@@ -493,15 +517,11 @@ if __name__ == "__main__":
         a.open_core_ui()
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
-        for i in range(1,10):
+        for i in range(0,10):
             a.protect_new_agent(ip, username, password)
-            a.find_last_job_id()
             a.status(ip)
-            a.find_last_job_id()
             a.rollback(ip)
-            a.find_last_job_id()
             a.status(ip)
-            a.find_last_job_id()
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
