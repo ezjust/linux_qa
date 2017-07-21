@@ -70,7 +70,7 @@ class WebAgent(object):
                 if elem.text in self.ip:
                     self.agent_link = test
                     self.id_agent = re.split('Machines/*', self.agent_link)[1]
-                    print(self.agent_link)
+                    # print(self.agent_link)
                     return(self.agent_link)
         except selenium.common.exceptions.StaleElementReferenceException:
             pass
@@ -83,6 +83,10 @@ class WebAgent(object):
         """
         current_page = self.driver.current_url
         self.driver.get(str(self.agent_link + "/Events"))
+        if self.driver.current_url is not str(self.agent_link + "/Events"):
+
+            time.sleep(10)
+
         time.sleep(2)
 
         WebDriverWait(self.driver, self.short_timeout).until(
@@ -96,16 +100,25 @@ class WebAgent(object):
 
             last_job = self.driver.find_element_by_id(
                 'taskGrid').find_elements_by_tag_name('tr')
+            while last_job is None:
+                last_job = self.driver.find_element_by_id(
+                    'taskGrid').find_elements_by_tag_name('tr')
             # last_job_attr = last_job[0].get_attribute('td')
             # for n in last_job:
             # print(n.get_attribute('id'))
+            try:
+                check = last_job[1]
+                check = last_job[1]
+                last_job_attr = check.get_attribute('id')
+                last_job_open = self.driver.find_element_by_xpath(
+                    ".//*[@id='" + last_job_attr + "']/td[7]/div")
+                print(
+                last_job_attr + " This is job ID of the last event is the events before active call of the new")
+                self.last_job_attr = last_job_attr
 
-            check = last_job[1]
-            last_job_attr = check.get_attribute('id')
-            last_job_open = self.driver.find_element_by_xpath(
-                ".//*[@id='" + last_job_attr + "']/td[7]/div")
-            print(last_job_attr + " This is job ID of the last event is the events before active call of the new")
-            self.last_job_attr = last_job_attr
+            except IndexError:
+                self.last_job_attr = 'null'
+
             return self.last_job_attr
 
 
@@ -132,7 +145,7 @@ class WebAgent(object):
 
 
         try:
-            print("I am here")
+            # print("I am here")
             element = WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
@@ -186,7 +199,6 @@ class WebAgent(object):
             finish.click()
             print("The agent %s with the credentials: %s and %s is protected" % (self.ip, self.username, self.password))
 
-            self.wait_for_element_invisible(element_id="lpLoadingContent")
 
             while self.find_machine_link() is None:
                 print(self.find_machine_link())
@@ -198,41 +210,45 @@ class WebAgent(object):
 
             self.find_last_job_id()
 
+            if self.driver.current_url != self.agent_link:
+                self.driver.get(str(self.agent_link))
+                time.sleep(10)
+
             WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.XPATH ,".//*[@id='volumesGroupsGrid_selectAll_triSpan']")))
             all_volumes = self.driver.find_element_by_xpath(".//*[@id='volumesGroupsGrid_selectAll_triSpan']")
             all_volumes.click()
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='setScheduleForAgent']/a/span")))
-            schedule = self.driver.find_element_by_xpath(".//*[@id='setScheduleForAgent']/a/span")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "setScheduleForAgent")))
+            schedule = self.driver.find_element_by_id("setScheduleForAgent")
             schedule.click()
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='weekdaysPeriod']")))
             every = self.driver.find_element_by_xpath(".//*[@id='weekdaysPeriod']")
             every.send_keys(Keys.LEFT_CONTROL, "a")
             every.send_keys(Keys.DELETE)
-            every.send_keys("5")
+            every.send_keys("15")
 
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
             apply.click()
 
             print("Schedule is configured")
-
+            # print("HERE1")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
             force_snapshot.click()
+            # print("HERE2")
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            # print("HERE3")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
+            first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
+            first_force.click()
+            # print("HERE4")
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            # print("HERE5")
 
-            # WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")))
-            # first_force = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")
-            # first_force.click()
-
-            print("Transfer forced")
-
-            self.driver.get(str(self.agent_link))
-
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")))
-            events = self.driver.find_element_by_xpath(".//*[@id='protectedMachineSummaryContainer']/div[1]/nav/ul/li[3]/a/span")
-            events.click()
 
         finally:
             pass
@@ -300,11 +316,18 @@ class WebAgent(object):
             self.driver.get(str(self.agent_link + "/Events"))
             time.sleep(2)
 
-            WebDriverWait(self.driver, self.short_timeout).until(
-                EC.presence_of_element_located((By.ID, "taskGrid")))
+            WebDriverWait(self.driver, self.long_timeout).until(EC.presence_of_element_located((By.ID, "taskGrid")))
             try:
                 last_job = self.driver.find_element_by_id(
                     'taskGrid').find_elements_by_tag_name('tr')
+
+                while len(last_job) <= 1:
+                    print(len(last_job))
+                    print("last job is None")
+                    time.sleep(5)
+                    last_job = self.driver.find_element_by_id(
+                        'taskGrid').find_elements_by_tag_name('tr')
+
                 check = last_job[1]
                 last_job_attr = check.get_attribute('id')
                 last_job_open = self.driver.find_element_by_xpath(
@@ -345,13 +368,16 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(
                 EC.presence_of_element_located((By.ID, "taskMonitorContent")))
 
-            time.sleep(5)
+            time.sleep(2)
 
-            job_name = self.driver.find_element_by_id(
+            WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "taskMonitorContent")))
+            try:
+                job_name = self.driver.find_element_by_id(
                 'taskMonitorContent').find_elements_by_tag_name('dd')[2].text
-            job_status = self.driver.find_element_by_id(
+                job_status = self.driver.find_element_by_id(
                 'taskMonitorContent').find_elements_by_tag_name('dd')[1].text
-
+            except selenium.common.exceptions.StaleElementReferenceException:
+                pass
             # print(job_status)  # here we get job status of the action
             if job_status not in ("Succeeded", "Error"):
                 self.job_id = self.driver.find_element_by_id(
@@ -398,6 +424,13 @@ class WebAgent(object):
             soup = BeautifulSoup(html, "html.parser")
             substring = soup.find_all('tr', attrs={'id': re.compile(self.job_id + '-')})
             status = re.split('title="\/*', str(substring))
+            while status[1] is None:
+                print("status[1] is None")
+                html = self.driver.page_source
+                soup = BeautifulSoup(html, "html.parser")
+                substring = soup.find_all('tr', attrs={
+                    'id': re.compile(self.job_id + '-')})
+                status = re.split('title="\/*', str(substring))
             status = re.split('" ', str(status[1]))
             job_status = status[0]
 
@@ -433,7 +466,7 @@ class WebAgent(object):
         substring = soup.find_all('button', {"class": "btn dropdown-toggle"})
         status = re.split('type=*', str(substring))
         status = re.split('"', str(status[0]))
-        print(status)
+        # print(status)
         select = self.driver.find_element_by_xpath(".//*[@id='" + status[5] + "']")
         select.click()
 
@@ -505,22 +538,154 @@ class WebAgent(object):
         time.sleep(5)
         print("COMPLETED ROLLBACK")
 
-        
+    def auto_bmr(self, ip_cd, pass_cd):
+        '''In this function we get id of the job from the events of the 
+                    dedicated agent and gets the original job id we can use in future.
+                    Without this function we cannot proceed in the get resolution
+                    status of the job.'''
+        self.ip = ip
+
+        self.ip_cd = ip_cd
+        self.pass_cd = pass_cd
+
+        agent_link = None
+
+        self.find_machine_link()
+
+        self.find_last_job_id()
+
+        self.driver.get(str(self.agent_link + "/RecoveryPoints"))
+        time.sleep(7)
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.text_to_be_present_in_element(
+                (By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span"),
+                "Recovery Points"))
+        html = self.driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        substring = soup.find_all('button', {"class": "btn dropdown-toggle"})
+        status = re.split('type=*', str(substring))
+        status = re.split('"', str(status[0]))
+        # print(status)
+        select = self.driver.find_element_by_xpath(
+            ".//*[@id='" + status[5] + "']")
+        select.click()
+
+        time.sleep(1)
+
+        # dm = self.driver.find_elements_by_class_name("dropdown-menu")
+        # for elem in dm:
+        #     if elem.text is not u'':
+        #         elem.find_element_by_link_text("Restore").click()
+        # time.sleep(7)
+
+        restore_button = None
+        dm = self.driver.find_elements_by_class_name("dropdown-menu")
+        for elem in dm:
+            if elem.text is not u'':
+                restore_button = elem.find_element_by_link_text("Restore")
+                while restore_button == None:
+                    dm = self.driver.find_elements_by_class_name(
+                        "dropdown-menu")
+                    for elem in dm:
+                        if elem.text is not u'':
+                            restore_button = elem.find_element_by_link_text(
+                                "Restore")
+
+        restore_button.click()
+
+        print("Restore button has been clicked.")
+
+        self.wait_for_element_invisible("lpLoadingContent")
+        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "recoverUsingBootCD")))
+        bootcd = self.driver.find_element_by_id("recoverUsingBootCD")
+        bootcd.click()
+
+        WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "alredyHaveBootCD")))
+        comfirm = self.driver.find_element_by_id("alredyHaveBootCD")
+        comfirm.click()
+
+        ip_addr = self.driver.find_element_by_id("ipAddress")
+        ip_addr.send_keys(self.ip_cd)
+
+        ip_addr = self.driver.find_element_by_id("authenticationKey")
+        ip_addr.send_keys(self.pass_cd)
+
+        WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        next = self.driver.find_element_by_id("btnWizardDefault")
+        next.click()
+
+        self.wait_for_element_invisible("lpLoadingContent")
+
+        popup = self.driver.find_element_by_id("msgbox-message")
+        print(popup.is_enabled())
+        # print(popup)
+        # print(popup.text)
+        '''Popup.text may have empty string.'''
+        if "Dynamic disks will be converted into basic during restoration" in popup.text:
+
+            self.driver.find_element_by_class_name("default").click()
+            self.driver.find_element_by_id("restoretionDisksMappingGrid_selectAll_triSpan").click()
+            self.driver.find_element_by_id("targetDisksGrid_selectAll_triSpan").click()
+
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        next = self.driver.find_element_by_id("btnWizardDefault")
+        next.click()
+
+
+
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        next = self.driver.find_element_by_id("btnWizardDefault")
+        next.click()
+
+        # print("Hello")
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        next = self.driver.find_element_by_id("btnWizardDefault")
+        next.click()
+
+        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "isIUnderstand")))
+        self.driver.find_element_by_id("isIUnderstand").click()
+        time.sleep(2)
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        finish = self.driver.find_element_by_id("btnWizardDefault")
+        finish.click()
+
+        self.wait_for_element_invisible(element_id="lpLoadingContent")
+        popup = self.driver.find_element_by_id("msgbox-message")
+        # print(popup)
+        # print(popup.text)
+        if "The type of source BIOS (LegacyBios) does not match destination BIOS type (UnifiedExtensibleFirmwareInterface)." in popup.text:
+            print("I am in popup.text")
+            self.driver.find_element_by_id("1").click()
+        time.sleep(5)
 
 if __name__ == "__main__":
-    ip = "10.10.30.153"
+    ip = "10.10.36.48"
     username = "rr"
     password = "123asdQ"
+    ip_cd = "10.10.28.92"
+    pass_cd = "123asdQQ"
+
     a = WebAgent()
     try:
 
         a.open_core_ui()
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
-        for i in range(0,10):
+        for i in range(0,9):
             a.protect_new_agent(ip, username, password)
             a.status(ip)
-            a.rollback(ip)
+            # a.rollback(ip)
+            # a.status(ip)
+            a.auto_bmr(ip_cd, pass_cd)
             a.status(ip)
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
@@ -529,5 +694,5 @@ if __name__ == "__main__":
 
         a.remove_agent_by_id(ip)
         a.driver.close()
-
+        pass
 

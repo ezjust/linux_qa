@@ -34,6 +34,7 @@ Vagrant.configure("2") do |config|
   end
   config.vm.define "ubuntu_16.04_x64" do |ubuntu1604|
     ubuntu1604.vm.box = "/home/mbugaiov/Documents/boxes/ubuntu_16.04_x64.box"
+    ubuntu1604.vm.network "public_network", type: "dhcp"
     ubuntu1604.ssh.username = "vagrant"
     ubuntu1604.ssh.password = "vagrant"
   end
