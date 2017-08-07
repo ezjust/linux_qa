@@ -26,6 +26,7 @@ class VagrantAutomation(object):
         self.cp.readfp(open(config))
         self.deb_packages = self.cp.get('remote', 'deb_packages')
         self.rhel_packages = self.cp.get('remote', 'rhel_packages')
+        self.pip_packages = self.cp.get('remote', 'pip_packages')
         self.sles_packages = self.cp.get('remote', 'sles_packages')
         self.os_list = re.split(' |\\n',
                                 self.cp.get('host', 'box_distro_name'))
@@ -57,12 +58,24 @@ class VagrantAutomation(object):
                 print("Install environment is in progress...")
                 if box_distro_name in ('ubuntu', 'debian'):
                     clean = "`ps -A | grep apt | awk '{print $1}'`"
-                    sudo('kill -9 ' + clean)
+                    sudo('echo ' + clean)
+                    sudo('echo ' + 'kill -9 ' + clean)
                     sudo('apt-get update')
                     sudo('apt-get install -y ' + self.deb_packages)
                 elif box_distro_name in ('rhel', 'centos'):
-                    sudo('yum update')
-                    sudo('yum install -y ' + self.rhel_packages)
+                    # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
+                    # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
+                    pass
+                    # sudo('yum update -y')
+                    # sudo('yum install -y ' + self.rhel_packages)
+                    # sudo('yum --disablerepo=epel -y update  ca-certificates')
+                    # sudo('yum install -y ' + self.rhel_packages)
+                    # sudo('wget https://bootstrap.pypa.io/get-pip.py')
+                    # sudo('/usr/bin/python2.7 get-pip.py')
+                    # sudo('pip install --upgrade pip')
+                    # if box_distro[1] in ('6'):
+                    #     sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages)
+                    # else: sudo('pip install ' + self.pip_packages)
                 elif box_distro_name in ('sles', 'suse'):
                     sudo('zyppre update -y')
                     sudo('zypper install -y ', + self.sles_packages)
@@ -71,10 +84,10 @@ class VagrantAutomation(object):
 #                run("chmod +x " + box_work_path + "/" + tar_name)
                 run("tar -xf " + box_work_path + "/" + tar_name)
                 run("cd " + box_work_path)
-                run("sudo python test_main.py")
+                run("sudo /usr/bin/python2.7 test_main.py")
             finally:
                 pass
-                v.destroy(vm_name=self.box_distro_name)
+                # v.destroy(vm_name=self.box_distro_name)
 
 
 

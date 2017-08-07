@@ -49,11 +49,12 @@ class AgentCommands(Agent):
         self.service_activity('rapidrecovery-agent', 'restart')
         self.status_of_the_service('rapidrecovery-agent', 0)
         self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
-
+        print("restart option is completed")
 
         self.service_activity('rapidrecovery-agent', 'stop')
         self.status_of_the_service('rapidrecovery-agent', 3) #seems like 3 is return when service is not running. Needs to be clarified.
         self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
+        print("stop option is completed")
 
         self.service_activity('rapidrecovery-agent', 'start')
         self.status_of_the_service('rapidrecovery-agent', 0)

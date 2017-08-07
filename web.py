@@ -146,11 +146,11 @@ class WebAgent(object):
 
         try:
             # print("I am here")
-            element = WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
+            element = WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
 
-            WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
+            # WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
@@ -182,6 +182,8 @@ class WebAgent(object):
                     click_upgrade = self.driver.find_element_by_id("upgradeAgent")
                     click_upgrade.click()
 
+                    print("I was in upgrade section and considered that machine is suitable for upgrade")
+                    print(upgrade.text)
                     next_button = self.driver.find_element_by_id("btnWizardDefault")
                     next_button.click()
 
@@ -226,7 +228,7 @@ class WebAgent(object):
             every = self.driver.find_element_by_xpath(".//*[@id='weekdaysPeriod']")
             every.send_keys(Keys.LEFT_CONTROL, "a")
             every.send_keys(Keys.DELETE)
-            every.send_keys("15")
+            every.send_keys("8")
 
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
@@ -339,8 +341,8 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(
                 EC.text_to_be_present_in_element((By.ID, "jqgh_taskGrid_Job"),
                                                  "Name"))
-            WebDriverWait(self.driver, self.short_timeout).until(
-                EC.presence_of_element_located((By.ID, "taskMonitorContent")))
+            # WebDriverWait(self.driver, self.short_timeout).until(
+            #     EC.presence_of_element_located((By.ID, "taskMonitorContent")))
 
             time.sleep(5)
 
@@ -527,7 +529,7 @@ class WebAgent(object):
         time.sleep(1)
 
         WebDriverWait(self.driver, self.long_timeout).until(EC.element_to_be_clickable((By.ID, "isIUnderstand")))
-        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "isIUnderstand")))
+        # WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "isIUnderstand")))
         accept_warning = self.driver.find_element_by_id("isIUnderstand")
         accept_warning.click()
         time.sleep(1)
@@ -617,10 +619,13 @@ class WebAgent(object):
 
         self.wait_for_element_invisible("lpLoadingContent")
 
+        popup_header = self.driver.find_element_by_id("msgbox-message-header")
         popup = self.driver.find_element_by_id("msgbox-message")
+
         print(popup.is_enabled())
         # print(popup)
-        # print(popup.text)
+        print(popup.text)
+
         '''Popup.text may have empty string.'''
         if "Dynamic disks will be converted into basic during restoration" in popup.text:
 
@@ -628,21 +633,23 @@ class WebAgent(object):
             self.driver.find_element_by_id("restoretionDisksMappingGrid_selectAll_triSpan").click()
             self.driver.find_element_by_id("targetDisksGrid_selectAll_triSpan").click()
 
+        elif "Error" in popup_header.text:
+            print("Error for connection to the LiveDVD is received: %s\n" % popup.text)
+            html = self.driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            error_message = soup.find_all('p', {"id": "msgbox-stacktrace"})
+            print error_message
+            exit(1)
 
         WebDriverWait(self.driver, self.short_timeout).until(
             EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         next = self.driver.find_element_by_id("btnWizardDefault")
         next.click()
 
-
-
-
         WebDriverWait(self.driver, self.short_timeout).until(
             EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         next = self.driver.find_element_by_id("btnWizardDefault")
         next.click()
-
-        # print("Hello")
 
         WebDriverWait(self.driver, self.short_timeout).until(
             EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
@@ -661,14 +668,14 @@ class WebAgent(object):
         self.wait_for_element_invisible(element_id="lpLoadingContent")
         popup = self.driver.find_element_by_id("msgbox-message")
         # print(popup)
-        # print(popup.text)
-        if "The type of source BIOS (LegacyBios) does not match destination BIOS type (UnifiedExtensibleFirmwareInterface)." in popup.text:
+        print(popup.text)
+        if "The type of source BIOS" in popup.text:
             print("I am in popup.text")
             self.driver.find_element_by_id("1").click()
         time.sleep(5)
 
 if __name__ == "__main__":
-    ip = "10.10.36.48"
+    ip = "10.10.35.168"
     username = "rr"
     password = "123asdQ"
     ip_cd = "10.10.28.92"
@@ -681,18 +688,18 @@ if __name__ == "__main__":
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
         for i in range(0,9):
-            a.protect_new_agent(ip, username, password)
-            a.status(ip)
-            # a.rollback(ip)
-            # a.status(ip)
-            a.auto_bmr(ip_cd, pass_cd)
-            a.status(ip)
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                # a.protect_new_agent(ip, username, password)
+                # a.status(ip)
+                # a.rollback(ip)
+                # a.status(ip)
+                a.auto_bmr(ip_cd, pass_cd)
+                a.status(ip)
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
     finally:
-
-        a.remove_agent_by_id(ip)
+        a.driver.get_screenshot_as_file(filename="/tmp/ERROR_image")
+        # a.remove_agent_by_id(ip)
         a.driver.close()
         pass
 

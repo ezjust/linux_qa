@@ -7,7 +7,8 @@ Vagrant.configure("2") do |config|
     v.cpus = 2
   end
   config.vm.define "centos_7_x64" do |centos7|
-    centos7.vm.box = "/var/lib/our_data/boxes/centos_7_x64.box"
+    centos7.vm.box = "/home/mbugaiov/Documents/boxes/centos_7_x64.box"
+    centos7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos7.ssh.username = "vagrant"
     centos7.ssh.password = "vagrant"
   end
@@ -22,7 +23,8 @@ Vagrant.configure("2") do |config|
     sles11.ssh.password = "vagrant"
   end
   config.vm.define "centos_6_x64" do |centos664|
-    centos664.vm.box = "/var/lib/our_data/boxes/centos_6_x64.box"
+    centos664.vm.box = "/home/mbugaiov/Documents/boxes/centos_6_x64.box"
+    centos664.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos664.ssh.username = "vagrant"
     centos664.ssh.password = "vagrant"
   end
@@ -34,7 +36,7 @@ Vagrant.configure("2") do |config|
   end
   config.vm.define "ubuntu_16.04_x64" do |ubuntu1604|
     ubuntu1604.vm.box = "/home/mbugaiov/Documents/boxes/ubuntu_16.04_x64.box"
-    ubuntu1604.vm.network "public_network", type: "dhcp"
+    ubuntu1604.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     ubuntu1604.ssh.username = "vagrant"
     ubuntu1604.ssh.password = "vagrant"
   end
@@ -69,7 +71,8 @@ Vagrant.configure("2") do |config|
     ubuntu120464.ssh.password = "vagrant"
   end
   config.vm.define "debian_8_x64" do |debian864|
-    debian864.vm.box = "/var/lib/our_data/boxes/debian_8_x64.box"
+    debian864.vm.box = "/home/mbugaiov/Documents/boxes/debian_8_x64.box"
+    debian864.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     debian864.ssh.username = "vagrant"
     debian864.ssh.password = "vagrant"
   end

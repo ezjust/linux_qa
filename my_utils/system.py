@@ -107,7 +107,7 @@ class Executor(object):
         # p.stdin.write("Y\n")
         p_status = p.wait()
         #error_code = p.communicate()[0]
-        return (p.returncode)
+        return (p.poll())
 
     def get_logfile(self):
         return self.__logFile
@@ -157,7 +157,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         super(SystemUtils, self).__init__()
 
     def install_distname(self):
-        distributive = self.distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
         if distributive.lower() in ["rhel", "centos", "oracle"]:
             return "rhel"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -168,7 +169,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             raise ValueError('The distributive of the system is not recognized')
 
     def install_packmanager(self):
-        distributive = self.distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "rpm"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -179,7 +181,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
            raise ValueError('The pack_manager of the system is not recognized')
 
     def packmanager(self):
-        distributive = self.distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "rpm"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -190,7 +193,9 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
            raise ValueError('The packmanager of the system is not recognized')
 
     def installed_package(self):
-        distributive = self.distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
+        print distributive.lower()
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "rpm -qa"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -201,7 +206,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
            raise ValueError('The command for installed package is not reqognized')
 
     def software_manager(self):
-        distributive = self.distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
+        print(distributive)
+        print(distributive.lower())
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "yum"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -212,19 +220,25 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             raise ValueError('The packmanager of the system is not recognized')
 
     def install_version(self):
-        distributive = self.install_distname()
+        distributive = self.distname().split()
+        distributive = distributive[0]
+        print("I am here in install version")
+        print(distributive)
         version = self.version()
-        if distributive.lower() == "debian" and version in ["15.04", "16.04", "16.10", "17.04", "17.10", "8", "9"]:
+        print(version)
+        version = version.rsplit('.')[0] + "." + version.rsplit('.')[1]
+        print(version)
+        if distributive.lower() in "debian, ubuntu" and version in ["15.04", "16.04", "16.10", "17.04", "17.10", "8.0", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "9.0", "9.1", "9.2", "9.3"]:
             return "8"
-        elif distributive.lower() is "debian" and version in ["12.04", "12.10", "14.04", "14.10", "7"]:
+        elif distributive.lower() in "debian, ubuntu" and version in ["12.04", "12.10", "14.04", "14.10", "7"]:
             return "7"
-        elif distributive.lower() is "rhel" and version in ["7.0", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8"]:
+        elif distributive.lower() in "rhel, centos, oracle" and version in ["7.0", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"]:
             return "7"
-        elif distributive.lower() is "rhel" and version in ["6.0", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8"]:
+        elif distributive.lower() in "rhel, centos, oracle" and version in ["6.0", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9"]:
             return "6"
-        elif distributive.lower() is "sles" and version in ["11.0", "11.1", "11.2", "11.3"]:
+        elif distributive.lower() in "sles, suse" and version in ["11.0", "11.1", "11.2", "11.3"]:
             return "11"
-        elif distributive.lower() is "sles" and version in ["12.0", "12.1", "12.2", "12.3"]:
+        elif distributive.lower() in "sles, suse" and version in ["12.0", "12.1", "12.2", "12.3"]:
             return "12"
         else:
             raise ValueError('The version of the distributive is not recognized')
@@ -268,17 +282,38 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         execute.execute(installation)
 
     def uninstall_agent(self):
+        check_installed_code = None
         execute = Executor()
+        print("I am here is uninstall0")
 
-        if execute.error_code(self.software_manager() + " | grep rapid") == "0" :
-            uninstallation_agent = self.software_manager() + " remove" + " " + self.agent
+        print(self.installed_package())
+        print("I am here is uninstall")
+        print(execute.error_code(self.installed_package() + " | grep rapid"))
+        if self.packmanager() in "rpm":
+            check_installed_code = execute.error_code(self.installed_package() + " | grep rapid")
+        elif self.packmanager() in "dpkg":
+            check_installed_code = execute.error_code(
+                self.installed_package() + "| grep ii | grep rapid")
+        if check_installed_code is 0:
+            print("I am here in uninstallation process")
+            uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
+            unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
+            print("UNinstallation_other, %s" % unistallation_other)
             execute.execute(uninstallation_agent)
-            unistallation_other = self.software_manager() + " remove" + " rapidrecovery-*"
             execute.execute(unistallation_other)
-            autoremove = self.software_manager() + " autoremove"
-            execute.execute(autoremove)
-            not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")
-            #print(not_removed)
+            print("List of not-removeed packages:")
+            not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
+            print("not removed= %s" % not_removed)
+            not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
+            print("not removed_dkms= %s" % not_removed_dkms)
+
+    def uninstall_autoremove(self):
+        execute = Executor()
+        autoremove = self.software_manager() + " -y" + " autoremove"
+        execute.execute(autoremove)
+        not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
+        print("not removed_dkms= %s" % not_removed_dkms)
+
 
     def uninstall_repo(self):
         execute = Executor()
@@ -291,8 +326,15 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def get_installed_package(self, cmd):
         self.cmd = cmd
-        self.command = self.installed_package() + " | " + "grep " + self.cmd + " | awk '{print $2}' | head -n1"
-        return self.execute.execute(self.command)
+        if self.packmanager() in "rpm":
+            self.command = self.installed_package() + " | " + "grep " + self.cmd
+        elif self.packmanager() in "dpkg":
+            self.command = self.installed_package() + " | " + "grep ii" + " | " + "grep " + self.cmd + " | awk '{print $2}' | head -n1"
+        else:
+            raise Exception("self.packmanager indicated error during execution")
+
+        # print(self.execute.execute(self.command))
+        return self.execute.execute(self.command)[0][0]
 
     def get_service_status(self, cmd):
         pass
@@ -302,17 +344,22 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         self.cmd = cmd
         self.result = result
         if self.result is True:
-            if (self.cmd + "\n") in self.get_installed_package(self.cmd)[0]:
+            print("self.cmd=" + self.cmd)
+            print("asd")
+            print(self.get_installed_package(self.cmd))
+            print("dsa")
+            if (self.cmd) in self.get_installed_package(self.cmd):
+                print("Finally")
                 return
             else:
-                print(self.get_installed_package(self.cmd)[0])
+                print(self.get_installed_package(self.cmd))
                 raise Exception(
-                    "%s package is not installed. But should be installed." % self.cmd)
+                    "%s package is NOT installed. But should be installed." % self.cmd)
         else:
-            if (self.cmd + "\n") not in self.get_installed_package(self.cmd)[0]:
+            if (self.cmd + "\n") not in self.get_installed_package(self.cmd):
                 return
             else:
-                print(self.get_installed_package(self.cmd)[0])
+                print(self.get_installed_package(self.cmd))
                 raise Exception(
                     "%s package is installed. But should NOT be installed." % self.cmd)
 
@@ -385,6 +432,7 @@ class Agent(Repoinstall):
         if self.status_of_the_service('rapidrecovery-agent', None) is not 0:
             self.service_activity('rapidrecovery-agent', 'restart')
             self.status_of_the_service('rapidrecovery-agent', 0)
+            print("I am in servicce agent is running. Agent should be running now.")
 
     def bsctl_hash(self):
         bsctl_hash = self.execute.execute(self.bsctl_v)
@@ -396,6 +444,7 @@ class Agent(Repoinstall):
         while len(result) is 0:
             result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
             time.sleep(5)
+            print("Waiting for the rapidrecovery_vss_v")
         rapidrecovery_vss_hash = self.execute.execute(self.rapidrecovery_vss_v)
         return rapidrecovery_vss_hash
 

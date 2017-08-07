@@ -14,7 +14,7 @@ class InstallRepo(Repoinstall):
         self.uninstall_agent()
 
     def tearDown(self):
-        self.uninstall_repo()
+        # self.uninstall_repo()
         print("******")
 
 
