@@ -23,10 +23,19 @@ class AgentConfigurator(Agent):
         bsctl_log = "/var/log/apprecovery/bsctl.log"
         configuration_log = "/var/log/apprecovery/configuration.log"
 
+        if self.install_distname() in ["ubuntu", "debian"]:
+            self.file_exists(result=True, file=rapidrecovery_config)
+            self.file_exists(result=True, file=agent_installation_log)
+            self.file_exists(result=False, file=apprecovery_log)
+            self.file_exists(result=True, file=bsctl_log)
+            self.file_exists(result=False, file=configuration_log)
+        elif self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
+            self.file_exists(result=True, file=rapidrecovery_config)
+            self.file_exists(result=True, file=agent_installation_log)
+            self.file_exists(result=False, file=apprecovery_log)
+            self.file_exists(result=True, file=bsctl_log)
+            self.file_exists(result=False, file=configuration_log)
+        else:
+            return Exception("The error in expected test result")
 
-        self.file_exists(rapidrecovery_config)
-        self.file_exists(agent_installation_log)
-        self.file_exists(apprecovery_log)
-        self.file_exists(bsctl_log)
-        self.file_exists(configuration_log)
 

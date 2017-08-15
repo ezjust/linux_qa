@@ -17,18 +17,37 @@ class InstallAgent(Repoinstall, SystemUtils):
         self.uninstall_agent()
 
     def runTest(self):
-
-        self.status_of_the_service('rapidrecovery-agent' , 3) #error code 3 is received when service is not running for systemctl
-        print("1")
-        self.install_agent_fromrepo()
-        self.check_package_installed('rapidrecovery-repo', True)
-        self.check_package_installed('rapidrecovery-agent', True)
-        print("2")
-        self.check_package_installed('rapidrecovery-mono', True)
-        self.check_package_installed('dkms', True)
-        self.status_of_the_service('rapidrecovery-agent', 3) # rapidrecovery-agent should not be started right after install. It should be started only after configuring.
-        print("3")
-        self.status_of_the_service('rapidrecovery-mapper', 3) # rapidrecovery-mapper should not be started right after install. It should be started only after configuring.
-        self.status_of_the_service('rapidrecovery-vdisk', 3) # rapidrecovery-vdisk should not be started right after install. It should be started only after configuring.
-        self.status_of_the_service('ssh', 0)
-
+        print("Start")
+        if self.check_initd() == 'systemctl':
+            self.status_of_the_service('rapidrecovery-agent' , 4) #error code 4 is received when service is not istalled
+            print("1")
+            self.install_agent_fromrepo()
+            self.check_package_installed('rapidrecovery-repo', expected_result=True)
+            self.check_package_installed('rapidrecovery-agent', expected_result=True)
+            print("2")
+            self.check_package_installed('rapidrecovery-mono', expected_result=True)
+            self.check_package_installed('dkms', expected_result=True)
+            self.status_of_the_service('rapidrecovery-agent', 3) # rapidrecovery-agent should not be started right after install. It should be started only after configuring.
+            print("3")
+            self.status_of_the_service('rapidrecovery-mapper', 3) # rapidrecovery-mapper should not be started right after install. It should be started only after configuring.
+            self.status_of_the_service('rapidrecovery-vdisk', 3) # rapidrecovery-vdisk should not be started right after install. It should be started only after configuring.
+        else:
+            self.status_of_the_service('rapidrecovery-agent',
+                                       127)  # error code 127 is received when service is not istalled
+            print("1")
+            self.install_agent_fromrepo()
+            self.check_package_installed('rapidrecovery-repo',
+                                         expected_result=True)
+            self.check_package_installed('rapidrecovery-agent',
+                                         expected_result=True)
+            print("2")
+            self.check_package_installed('rapidrecovery-mono',
+                                         expected_result=True)
+            self.check_package_installed('dkms', expected_result=True)
+            self.status_of_the_service('rapidrecovery-agent',
+                                       1)  # 1 is received when service is not running. rapidrecovery-agent should not be started right after install. It should be started only after configuring.
+            print("3")
+            self.status_of_the_service('rapidrecovery-mapper',
+                                       1)  # rapidrecovery-mapper should not be started right after install. It should be started only after configuring.
+            self.status_of_the_service('rapidrecovery-vdisk',
+                                       1)  # rapidrecovery-vdisk should not be started right after install. It should be started only after configuring.

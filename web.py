@@ -146,7 +146,7 @@ class WebAgent(object):
 
         try:
             # print("I am here")
-            element = WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
 
@@ -453,11 +453,15 @@ class WebAgent(object):
               Without this function we cannot proceed in the get resolution
               status of the job.'''
         self.ip = ip
+
+        self.ip_cd = ip_cd
+        self.pass_cd = pass_cd
+
         agent_link = None
 
-        self.find_last_job_id()
-
         self.find_machine_link()
+
+        self.find_last_job_id()
 
         self.driver.get(str(self.agent_link + "/RecoveryPoints"))
         time.sleep(7)
@@ -675,7 +679,7 @@ class WebAgent(object):
         time.sleep(5)
 
 if __name__ == "__main__":
-    ip = "10.10.35.168"
+    ip = "10.10.25.204"
     username = "rr"
     password = "123asdQ"
     ip_cd = "10.10.28.92"
@@ -688,10 +692,10 @@ if __name__ == "__main__":
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
         for i in range(0,9):
-                # a.protect_new_agent(ip, username, password)
-                # a.status(ip)
-                # a.rollback(ip)
-                # a.status(ip)
+                a.protect_new_agent(ip, username, password)
+                a.status(ip)
+                a.rollback(ip)
+                a.status(ip)
                 a.auto_bmr(ip_cd, pass_cd)
                 a.status(ip)
                 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

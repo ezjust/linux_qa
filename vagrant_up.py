@@ -21,6 +21,8 @@ class VagrantAutomation(object):
     box_log = '/box.log'
     box_log_object = None
 
+
+
     def read_cfg(self, **kwargs):
         self.cp = ConfigParser.ConfigParser()
         self.cp.readfp(open(config))
@@ -57,37 +59,57 @@ class VagrantAutomation(object):
 
                 print("Install environment is in progress...")
                 if box_distro_name in ('ubuntu', 'debian'):
-                    clean = "`ps -A | grep apt | awk '{print $1}'`"
-                    sudo('echo ' + clean)
-                    sudo('echo ' + 'kill -9 ' + clean)
+                    clean = "echo `ps -A | grep apt | awk '{print $1}'`"
+                    result_clean = run(clean)
+                    print("1111")
+                    print(result_clean)
+                    print(len(result_clean))
+                    print("2222")
+                    if len(result_clean) is not 0:
+                        run(stderr=False, command='sudo kill -9 ' + result_clean)
                     sudo('apt-get update')
                     sudo('apt-get install -y ' + self.deb_packages)
                 elif box_distro_name in ('rhel', 'centos'):
                     # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
                     # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
                     pass
-                    # sudo('yum update -y')
-                    # sudo('yum install -y ' + self.rhel_packages)
-                    # sudo('yum --disablerepo=epel -y update  ca-certificates')
-                    # sudo('yum install -y ' + self.rhel_packages)
-                    # sudo('wget https://bootstrap.pypa.io/get-pip.py')
-                    # sudo('/usr/bin/python2.7 get-pip.py')
-                    # sudo('pip install --upgrade pip')
-                    # if box_distro[1] in ('6'):
-                    #     sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages)
-                    # else: sudo('pip install ' + self.pip_packages)
+                    sudo('yum update -y')
+                    sudo('yum install -y ' + self.rhel_packages)
+                    sudo('yum --disablerepo=epel -y update  ca-certificates')
+                    sudo('yum install -y ' + self.rhel_packages)
+                    sudo('wget https://bootstrap.pypa.io/get-pip.py')
+                    sudo('/usr/bin/python2.7 get-pip.py')
+                    sudo('pip install --upgrade pip')
+                    if box_distro[1] in ('6'):
+                        sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages)
+                    else: sudo('pip install ' + self.pip_packages)
                 elif box_distro_name in ('sles', 'suse'):
                     sudo('zyppre update -y')
                     sudo('zypper install -y ', + self.sles_packages)
+
+
+                sudo('uname -r')
                 print("Done")
-                put(work_path + tar_name, box_work_path + "/" + tar_name, use_sudo=True)
-#                run("chmod +x " + box_work_path + "/" + tar_name)
+
+            except Exception as e:
+                print("Exceptions has been received. Skipped, proceeding for the next OS.")
+                # pass
+        v.reload(vm_name=self.box_distro_name)
+        with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
+            try:
+                print("THE MACHINE SEEMS TO BE RELOADED")
+                sudo('uname -r')
+                put(work_path + tar_name, box_work_path + "/" + tar_name,
+                    use_sudo=True)
+                #                run("chmod +x " + box_work_path + "/" + tar_name)
                 run("tar -xf " + box_work_path + "/" + tar_name)
                 run("cd " + box_work_path)
                 run("sudo /usr/bin/python2.7 test_main.py")
+
+
             finally:
                 pass
-                # v.destroy(vm_name=self.box_distro_name)
+                v.destroy(vm_name=self.box_distro_name)
 
 
 

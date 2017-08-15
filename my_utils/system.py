@@ -62,7 +62,8 @@ class Executor(object):
         #((output, err), code)
         (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
         # print("OUT=", output)
-        #print(output)
+        # print(output)
+        # print(err)
         # p.stdin.write("Y\n")
         p_status = p.wait()
         #error_code = p.communicate()[0]
@@ -195,7 +196,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def installed_package(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        print distributive.lower()
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "rpm -qa"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -208,8 +208,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def software_manager(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        print(distributive)
-        print(distributive.lower())
         if distributive.lower() in ["rhel", "centos", "oracle"]:
            return "yum"
         elif distributive.lower() in ["ubuntu", "debian"]:
@@ -222,12 +220,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def install_version(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        print("I am here in install version")
-        print(distributive)
         version = self.version()
-        print(version)
         version = version.rsplit('.')[0] + "." + version.rsplit('.')[1]
-        print(version)
         if distributive.lower() in "debian, ubuntu" and version in ["15.04", "16.04", "16.10", "17.04", "17.10", "8.0", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "9.0", "9.1", "9.2", "9.3"]:
             return "8"
         elif distributive.lower() in "debian, ubuntu" and version in ["12.04", "12.10", "14.04", "14.10", "7"]:
@@ -261,58 +255,89 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def run_repo_installer(self):
         check = Repoinstall()
-        install = check.packmanager() + " -i" + " repo"
+        install = "sudo " + check.packmanager() + " -i" + " repo"
         execute = Executor()
         execute.execute(install)
-        update = check.software_manager() + " update"
+        update = "sudo " + check.software_manager() + " update"
         execute.execute(update)
 
     def install_agent_fromrepo(self):
         self.create_link()
         self.download_file()
         check = Repoinstall()
-        install = check.packmanager() + " -i" + " repo"
-        execute = Executor()
-        execute.execute(install)
-        update = check.software_manager() + " update"
-        execute.execute(update)
-        #print self.agent
-        installation = check.software_manager() + " install" + " " + self.agent
-        #print installation
-        execute.execute(installation)
+        try:
+            execute = Executor()
+            if self.check_installed_code_rapid() is 1:
 
-    def uninstall_agent(self):
+                install = "sudo " + check.packmanager() + " -i" + " repo"
+                execute.execute(install)
+
+            elif self.check_installed_code_rapid() not in [0, 1]:
+                raise Exception("Received not [0,1] result code for check rapid")
+
+            update = "sudo " + check.software_manager() + " update -y"
+            execute.execute(update)
+            #print self.agent
+            clean_all = "sudo " + check.software_manager() + " clean all"
+            print(clean_all)
+            execute.execute(clean_all)
+            execute.execute(update)
+            installation = "sudo " + check.software_manager() + " install" + " -y " + self.agent
+            print installation
+            execute.execute(installation)
+
+        except Exception as e:
+            print(e)
+
+
+    def check_installed_code_rapid(self):
+        '''Return if any rapidrecovery package is installed on the system.
+        Returns 0 if package/s is available. 1 if not available'''
+        execute = Executor()
         check_installed_code = None
-        execute = Executor()
-        print("I am here is uninstall0")
 
-        print(self.installed_package())
-        print("I am here is uninstall")
-        print(execute.error_code(self.installed_package() + " | grep rapid"))
         if self.packmanager() in "rpm":
-            check_installed_code = execute.error_code(self.installed_package() + " | grep rapid")
+            check_installed_code = execute.error_code(
+                self.installed_package() + " | grep rapid")
         elif self.packmanager() in "dpkg":
             check_installed_code = execute.error_code(
                 self.installed_package() + "| grep ii | grep rapid")
-        if check_installed_code is 0:
-            print("I am here in uninstallation process")
+
+        return check_installed_code
+
+
+    def uninstall_agent(self):
+        execute = Executor()
+
+        if self.check_installed_code_rapid() is 0:
             uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
             unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
-            print("UNinstallation_other, %s" % unistallation_other)
             execute.execute(uninstallation_agent)
-            execute.execute(unistallation_other)
-            print("List of not-removeed packages:")
+            not_removed = execute.execute(
+                self.software_manager() + " | grep rapid | awk '{print $2}'")[
+                0][0]
+            not_removed_dkms = execute.execute(
+                self.software_manager() + " | grep dkms | awk '{print $2}'")[
+                0][0]
+            if self.check_installed_code_rapid() is 0:
+                execute.execute(unistallation_other)
             not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
-            print("not removed= %s" % not_removed)
             not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
-            print("not removed_dkms= %s" % not_removed_dkms)
+            print("completed uninstall agent")
 
     def uninstall_autoremove(self):
         execute = Executor()
-        autoremove = self.software_manager() + " -y" + " autoremove"
-        execute.execute(autoremove)
-        not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
-        print("not removed_dkms= %s" % not_removed_dkms)
+        print(self.install_version())
+        version = self.install_version()
+        if version is "6":
+            uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
+            execute.execute(uninstallation_dkms)
+        else:
+            print("I am in else statement")
+            autoremove = "sudo " + self.software_manager() + " -y" + " autoremove"
+            execute.execute(autoremove)
+            uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
+            execute.execute(uninstallation_dkms)
 
 
     def uninstall_repo(self):
@@ -329,55 +354,63 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         if self.packmanager() in "rpm":
             self.command = self.installed_package() + " | " + "grep " + self.cmd
         elif self.packmanager() in "dpkg":
-            self.command = self.installed_package() + " | " + "grep ii" + " | " + "grep " + self.cmd + " | awk '{print $2}' | head -n1"
+            self.command = self.installed_package() + " | " + "grep ii" + " | " + "grep " + self.cmd
         else:
             raise Exception("self.packmanager indicated error during execution")
 
         # print(self.execute.execute(self.command))
-        return self.execute.execute(self.command)[0][0]
+        code = self.execute.error_code(self.command)
+        if code is 0:
+            result = True
+        elif code is 1:
+            result = False
+        else:
+            raise Exception("I have received not [0, 1] exit codes for the %s" % self.command)
+        print(self.command + " is %s" % result)
+        return result
+
 
     def get_service_status(self, cmd):
         pass
 
-    def check_package_installed(self, cmd, result):
+    def check_package_installed(self, cmd, expected_result):
         # self.getinstalledpackage(cmd)
         self.cmd = cmd
-        self.result = result
-        if self.result is True:
-            print("self.cmd=" + self.cmd)
-            print("asd")
+        self.expected_result = expected_result
+        if self.expected_result is True:
             print(self.get_installed_package(self.cmd))
-            print("dsa")
-            if (self.cmd) in self.get_installed_package(self.cmd):
-                print("Finally")
+            if self.expected_result is self.get_installed_package(self.cmd):
                 return
             else:
                 print(self.get_installed_package(self.cmd))
                 raise Exception(
                     "%s package is NOT installed. But should be installed." % self.cmd)
         else:
-            if (self.cmd + "\n") not in self.get_installed_package(self.cmd):
+            if self.expected_result is self.get_installed_package(self.cmd):
                 return
             else:
-                print(self.get_installed_package(self.cmd))
+                print(" self.get_installed_package(self.cmd) is %s" % self.get_installed_package(self.cmd))
+                print(" self.expected_result is %s" % self.expected_result)
                 raise Exception(
                     "%s package is installed. But should NOT be installed." % self.cmd)
 
 
     def return_of_unix_command(self, command):
         self.command = command
-        result = self.execute.execute(self.command)[0][0]#
+        result = self.execute.execute(self.command)[0][0]
+        print result
         return result
 
 
     def check_initd(self):
+        '''127 error code is recevied for systemc --v on the init systems'''
         execute = Executor()
         a = Repoinstall()
         command = 'systemctl --v'
-        if ('systemd') in a.return_of_unix_command(command):
-            return 'systemctl'
-        else:
+        if 127 is a.execute.error_code(command):
             return '/etc/init.d'
+        else:
+            return 'systemctl'
 
     def status_of_the_service(self, cmd, code):
         a = Repoinstall()
@@ -387,13 +420,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             command = 'systemctl status %s'% self.cmd
             if self.code is not None:
                 if self.execute.error_code(command) is not self.code:
-                    raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+                    raise Exception("SYSTEMCTL: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
             #return self.execute.error_code(command)
         elif a.check_initd() == '/etc/init.d':
             command = '/etc/init.d/%s status'% self.cmd
             if self.code is not None:
                 if self.execute.error_code(command) is not self.code:
-                    raise Exception("Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+                    raise Exception("INITD: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
             #return self.execute.error_code(command)
         else:
             raise Exception("Pizdec!")
@@ -421,12 +454,19 @@ class Agent(Repoinstall):
     nbd_check = "ps axf | grep 'nbd[0-9]'; echo $?"
     rapid_vss_installed = "/usr/sbin/dkms status | grep rapidrecovery-vss | tr ' ' '\n' | tail -n1"
 
-    def file_exists(self, file):
+    def file_exists(self, result, file):
+        self.result = result
         self.file = file
-        if os.path.isfile(self.file) is True:
-            return
-        else:
-            raise Exception("%s : File is not exist" % self.file)
+        if self.result is True:
+            if os.path.isfile(self.file) is True:
+                return
+            else:
+                raise Exception("%s : File is not exist" % self.file)
+        if self.result is False:
+            if os.path.isfile(self.file) is False:
+                return
+            else:
+                raise Exception("%s : File exists. This is error, it should not be existed." % self.file)
 
     def check_agent_is_running(self):
         if self.status_of_the_service('rapidrecovery-agent', None) is not 0:

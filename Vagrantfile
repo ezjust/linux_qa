@@ -81,5 +81,13 @@ Vagrant.configure("2") do |config|
     debian732.ssh.username = "vagrant"
     debian732.ssh.password = "vagrant"
   end
+  config.vm.define "livecd" do |live|
+    live.vm.box = "/home/mbugaiov/Documents/git/linux_qa/livecd.box"
+    live.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    live.ssh.forward_x11 = true
+    live.ssh.username = "vagrant"
+    live.ssh.password = "vagrant"
+  end
+
 end
 

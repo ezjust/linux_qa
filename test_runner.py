@@ -87,16 +87,16 @@ class TestRunner(object):
                 #print(self.test_classes[key])
                 result = None
                 try:
-                    self.executor.log("%s test :" % key)
+                    self.executor.log("%s test :\n" % key)
                     test = self.test_classes[key]()
-                    self.executor.log("Setting Up %s test ....." % key)
+                    self.executor.log("Setting Up %s test .....\n" % key)
                     test.setUp()
                     #self.executor.log("Done")
-                    self.executor.log("Running %s test ........" % key)
+                    self.executor.log("Running %s test ........\n" % key)
                     stat_loops.started +=1 #increment started count before runTest and after setUp
                     #self.executor.log("Done")
                     test.runTest()
-                    self.executor.log("Completed %s test ......" % key)
+                    self.executor.log("Completed %s test ......\n" % key)
                     stat_loops.passed +=1 #increment passed in case if run
                     #self.executor.log("Done")
                     #print("%s" % ('Test %s is: ''OK') % key)
@@ -107,7 +107,7 @@ class TestRunner(object):
                     #print("%s" % ('Test %s is: ''FAIL') % key)
                     result = "failed"
                 finally:
-                    self.executor.log("Cleaning Up %s test ...." % key),
+                    self.executor.log("Cleaning Up %s test ....\n" % key),
                     test.tearDown()
                     #self.executor.log("Done")
                 print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))

@@ -14,7 +14,7 @@ class InstallRepo(Repoinstall):
         self.uninstall_agent()
 
     def tearDown(self):
-        # self.uninstall_repo()
+        self.uninstall_repo()
         print("******")
 
 
@@ -24,6 +24,6 @@ class InstallRepo(Repoinstall):
         self.download_file()
         self.run_repo_installer()
         #self.get_process_pid(cmd='ssh')
-        self.check_package_installed('rapidrecovery-repo', result=True)
+        self.check_package_installed('rapidrecovery-repo', expected_result=True)
 
 

@@ -22,7 +22,7 @@ class AgentProtocol(Agent):
 
     def tearDown(self):
         pass
-        # self.uninstall_agent()
+        self.uninstall_agent()
 
     def runTest(self):
 
