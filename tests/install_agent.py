@@ -19,7 +19,7 @@ class InstallAgent(Repoinstall, SystemUtils):
     def runTest(self):
         print("Start")
         if self.check_initd() == 'systemctl':
-            self.status_of_the_service('rapidrecovery-agent' , 4) #error code 4 is received when service is not istalled
+            self.status_of_the_service('rapidrecovery-agent' , 3) #error code 3 is received when service is not istalled
             print("1")
             self.install_agent_fromrepo()
             self.check_package_installed('rapidrecovery-repo', expected_result=True)

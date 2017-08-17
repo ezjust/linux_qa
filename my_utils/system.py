@@ -431,6 +431,18 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         else:
             raise Exception("Pizdec!")
 
+    def error_code_of_the_service(self, cmd):
+        a = Repoinstall()
+        self.cmd = cmd
+        if a.check_initd() == 'systemctl':
+            command = 'systemctl status %s' % self.cmd
+            return self.execute.error_code(command)
+        elif a.check_initd() == '/etc/init.d':
+            command = '/etc/init.d/%s status' % self.cmd
+            return self.execute.error_code(command)
+        else:
+            raise Exception("Error is return of the error code of service")
+
 
     def service_activity(self, cmd, action):
         a = Repoinstall()

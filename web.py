@@ -1,5 +1,6 @@
 import splinter
 import selenium
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -16,7 +17,7 @@ import re
 import urllib
 
 
-link = 'https://10.10.61.30:8006/apprecovery/admin'
+link = 'https://10.10.61.20:8006/apprecovery/admin'
 # driver.implicitly_wait(10) # seconds
 
 
@@ -55,26 +56,57 @@ class WebAgent(object):
         except TimeoutException:
             pass
 
-
     def find_machine_link(self):
+        print("I am in find machine link")
+        WebDriverWait(self.driver, self.long_timeout, ignored_exceptions=['selenium.common.exceptions.StaleElementReferenceException']).until(
+            EC.presence_of_element_located((By.TAG_NAME, 'a')))
+        time.sleep(5)
+        set_of_machine = self.driver.find_element(By.ID,
+                                                  "apgProtected"). \
+            find_element(By.CLASS_NAME, "ui-agents-panel-content")
+        for elem in set_of_machine.find_elements_by_tag_name('a'):
+            # try:
+            #     print elem.get_attribute('href')
+            # except selenium.common.exceptions.StaleElementReferenceException as e:
+            #     # print len(set_of_machine)
+            #     print "MY ERROR", e
+                # test = None
+            try:
+                test = elem.get_attribute('href')
+                # print "ELEM", elem.text
+                # print "SELF IP", self.ip
+                if elem.text in [self.ip]:
+                    self.agent_link = test
+                    self.id_agent = re.split(r'Machines/*', self.agent_link)[1]
+                    # print "AGENT LINK", self.agent_link
+                    return self.agent_link
+            except Exception:
+                continue
+            # print("self.ip  is up")
+
+    def find_machine_link2(self):
+        print("I am in find machine link")
         WebDriverWait(self.driver, self.long_timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, 'a')))
         try:
             set_of_machine = self.driver.find_element(By.ID,
                                                       "apgProtected").find_elements_by_tag_name(
                 'a')
+            # print set_of_machine
             for elem in set_of_machine:
 
                 test = elem.get_attribute('href')
-
+                # print test
+                # print elem.text
+                # print(self.ip)
+                # print("self.ip  is up")
                 if elem.text in self.ip:
                     self.agent_link = test
                     self.id_agent = re.split('Machines/*', self.agent_link)[1]
                     # print(self.agent_link)
-                    return(self.agent_link)
+                    return (self.agent_link)
         except selenium.common.exceptions.StaleElementReferenceException:
             pass
-
 
     def find_last_job_id(self):
 
@@ -82,7 +114,8 @@ class WebAgent(object):
         Here is output of the this job id : 405bf1d0-e552-4b3f-8dc6-f8a4f2310d8f
         """
         current_page = self.driver.current_url
-        self.driver.get(str(self.agent_link + "/Events"))
+        if self.agent_link is not None:
+            self.driver.get(str(self.agent_link + "/Events"))
         if self.driver.current_url is not str(self.agent_link + "/Events"):
 
             time.sleep(10)
@@ -113,7 +146,7 @@ class WebAgent(object):
                 last_job_open = self.driver.find_element_by_xpath(
                     ".//*[@id='" + last_job_attr + "']/td[7]/div")
                 print(
-                last_job_attr + " This is job ID of the last event is the events before active call of the new")
+                    last_job_attr + " This is job ID of the last event is the events before active call of the new")
                 self.last_job_attr = last_job_attr
 
             except IndexError:
@@ -145,12 +178,12 @@ class WebAgent(object):
 
 
         try:
-            # print("I am here")
+            print("I am starting to protect agent %s, %s, %s" % (self.ip, self.username, self.password))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
 
-            # WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
+            WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
@@ -205,8 +238,8 @@ class WebAgent(object):
             while self.find_machine_link() is None:
                 print(self.find_machine_link())
                 print("waiting protected machine to appear")
-                time.sleep(1)
-            print("New transfer will be started")
+                time.sleep(5)
+            print("Machine is protected. New transfer will be started")
 
             self.driver.get(str(self.agent_link))
 
@@ -267,7 +300,7 @@ class WebAgent(object):
             while self.agent_link == None:
                 time.sleep(5)
                 self.find_machine_link()
-                print("I got None for agent_link, while is applied.")
+                print("I got 'None' for the agent_link, 'timeout in 60 sec' is applied.")
                 counter = counter + 1
                 if counter == 12 :
                     self.driver.close()
@@ -352,8 +385,8 @@ class WebAgent(object):
                 event_grid = self.driver.find_element_by_id(
                     'taskGrid').find_elements_by_tag_name('tr')
                 # for elem in event_grid:
-                    # test = elem.get_attribute('td')
-                    # print(elem.text)
+                # test = elem.get_attribute('td')
+                # print(elem.text)
                 last_job = self.driver.find_element_by_id(
                     'taskGrid').find_elements_by_tag_name('tr')
                 check = last_job[1]
@@ -375,9 +408,9 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "taskMonitorContent")))
             try:
                 job_name = self.driver.find_element_by_id(
-                'taskMonitorContent').find_elements_by_tag_name('dd')[2].text
+                    'taskMonitorContent').find_elements_by_tag_name('dd')[2].text
                 job_status = self.driver.find_element_by_id(
-                'taskMonitorContent').find_elements_by_tag_name('dd')[1].text
+                    'taskMonitorContent').find_elements_by_tag_name('dd')[1].text
             except selenium.common.exceptions.StaleElementReferenceException:
                 pass
             # print(job_status)  # here we get job status of the action
@@ -437,8 +470,8 @@ class WebAgent(object):
             job_status = status[0]
 
         if job_status == "Error":
-             raise Exception(
-                 "The %s status has been received for the job: %s." % (job_status, job_name))
+            raise Exception(
+                "The %s status has been received for the job: %s." % (job_status, job_name))
         elif job_status == "Succeeded":
             print("The job %s is completed with the %s status" % (job_name, job_status))
         else:
@@ -550,15 +583,37 @@ class WebAgent(object):
                     Without this function we cannot proceed in the get resolution
                     status of the job.'''
         self.ip = ip
-
+        self.vmname = vmname
         self.ip_cd = ip_cd
         self.pass_cd = pass_cd
-
         agent_link = None
-
         self.find_machine_link()
-
         self.find_last_job_id()
+        status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+        boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+        restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+        poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+
+
+        print("Working here")
+
+        status = self.execute(cmd=status_vm)[0][0]
+        print(status)
+        if status in ["powered", "saved"]:
+            print "True"
+            if "powered" in status:
+                self.execute(cmd=boot_vm_dvd)
+                time.sleep(10)
+                print("LiveDVD machine is configured to boot from LiveDVD")
+
+                self.execute(cmd=restore_snap)
+                print("Snapshot restored")
+                time.sleep(5)
+
+            self.execute(cmd=start_vm)
+            print("LiveDVD machine booting from the dvd")
+
 
         self.driver.get(str(self.agent_link + "/RecoveryPoints"))
         time.sleep(7)
@@ -569,10 +624,12 @@ class WebAgent(object):
                 "Recovery Points"))
         html = self.driver.page_source
         soup = BeautifulSoup(html, "html.parser")
-        substring = soup.find_all('button', {"class": "btn dropdown-toggle"})
+        #substring = soup.find_all('button', {"class": "btn dropdown-toggle"}) '''worked in 7.0.0 and not working in 6.1.3'''
+        substring = soup.find_all('button', {"type": "button"})
+        print substring
         status = re.split('type=*', str(substring))
         status = re.split('"', str(status[0]))
-        # print(status)
+        print(status)
         select = self.driver.find_element_by_xpath(
             ".//*[@id='" + status[5] + "']")
         select.click()
@@ -678,12 +735,116 @@ class WebAgent(object):
             self.driver.find_element_by_id("1").click()
         time.sleep(5)
 
+    def error_code_unix_command(self, cmd=None):
+        # type: (object) -> object
+        if cmd is not None:
+            self.cmd = cmd
+        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        #((output, err), code)
+        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+        # print("OUT=", output)
+        #print(output)
+        # p.stdin.write("Y\n")
+        p_status = p.wait()
+        #error_code = p.communicate()[0]
+        return (p.poll())
+
+    def execute(self, cmd=None):
+        # type: (object) -> object
+        if cmd is not None:
+            self.cmd = cmd
+        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        #((output, err), code)
+        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+        # print("OUT=", output)
+        # print(output)
+        # print(err)
+        # p.stdin.write("Y\n")
+        p_status = p.wait()
+        #error_code = p.communicate()[0]
+        if err not in (0, 100):
+            raise Exception("Exception: '%s' command finished with error code %d" %(self.cmd, err))
+        else:
+            return (output, err)
+
+    def bmr_bootable(self, ip_cd, pass_cd, vmname):
+        self.vmname = vmname
+        self.ip = ip
+        self.ip_cd = ip_cd
+        self.pass_cd = pass_cd
+        self.bootability = None
+        counter = 0
+        poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+        start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+        boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+        boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
+        restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+        status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        try:
+            # print(self.error_code_unix_command(cmd=poweroff_vm))
+            status = self.execute(cmd=status_vm)[0][0]
+            if "running" in status:
+                print("I am here")
+                self.execute(cmd=poweroff_vm)
+                print("Machine poweroff")
+                time.sleep(10)
+            self.execute(cmd=boot_vm_disk)
+            print("Machine settings: Boot from disk")
+            time.sleep(10)
+            self.execute(cmd=start_vm)
+            print("Machine started")
+
+
+            cmd = "ping -c 1 " + self.ip_cd
+            print(cmd)
+            # print(self.error_code_unix_command(cmd))
+            # print(counter)
+            # print("Counter is up")
+            while self.error_code_unix_command(cmd) is not 0 and counter <= 60:
+                print("Wainting machine to be booted... %i" %counter)
+                time.sleep(10)
+                counter = counter + 1
+                #print(self.error_code_unix_command(cmd))
+            else:
+                if self.error_code_unix_command(cmd) is 0 and counter <= 60:
+                    print("Network connection to the machine is available, assume that BMR is OK")
+                    time.sleep(10)
+                    self.execute(
+                        cmd="vboxmanage controlvm " + self.vmname + " screenshotpng /tmp/bmr.png")
+                    self.execute(cmd="display /tmp/bmr.png")
+                else:
+                    print("Machine was not booted within 10 minutes, assume BMR is FAILED")
+                    return 1
+            print("Testing of the bootability of the machine is completed.")
+
+        except:
+            pass
+        finally:
+            self.execute(cmd=poweroff_vm)
+            print("Machine poweroff")
+            time.sleep(10)
+            self.execute(cmd=boot_vm_dvd)
+            print("Machine settings: Boot from dvd")
+            time.sleep(10)
+            self.execute(cmd=restore_snap)
+            print("Snapshot restored")
+            time.sleep(5)
+            self.execute(cmd=start_vm)
+            print("Completed")
+
+
+
+
+
 if __name__ == "__main__":
-    ip = "10.10.25.204"
+    ip = "10.10.35.168"
     username = "rr"
     password = "123asdQ"
-    ip_cd = "10.10.28.92"
+    ip_cd = "10.10.38.10"
     pass_cd = "123asdQQ"
+    vmname = "livedvd"
 
     a = WebAgent()
     try:
@@ -692,12 +853,13 @@ if __name__ == "__main__":
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
         for i in range(0,9):
-                a.protect_new_agent(ip, username, password)
-                a.status(ip)
-                a.rollback(ip)
-                a.status(ip)
+                # a.protect_new_agent(ip, username, password)
+                # a.status(ip)
+                # a.rollback(ip)
+                # a.status(ip)
                 a.auto_bmr(ip_cd, pass_cd)
                 a.status(ip)
+                a.bmr_bootable(ip_cd, pass_cd, vmname)
                 print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 

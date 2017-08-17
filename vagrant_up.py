@@ -7,6 +7,7 @@ import tarfile
 import ConfigParser
 
 log_cm = vagrant.make_file_cm('deployment.log')
+configuration_log = open('configuration.log', mode='a+')
 machine_name = "ubuntu_16.04_x64"
 work_path = os.getcwd() + "/" #Returns current directory, where script is run.
 box_work_path = "/home/vagrant"
@@ -66,44 +67,43 @@ class VagrantAutomation(object):
                     print(len(result_clean))
                     print("2222")
                     if len(result_clean) is not 0:
-                        run(stderr=False, command='sudo kill -9 ' + result_clean)
-                    sudo('apt-get update')
-                    sudo('apt-get install -y ' + self.deb_packages)
+                        sudo(stderr=False, command='kill -9 ' + result_clean)
+                    sudo('apt-get update', stdout=configuration_log)
+                    sudo('apt-get install -y ' + self.deb_packages, stdout=configuration_log)
                 elif box_distro_name in ('rhel', 'centos'):
                     # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
                     # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
                     pass
-                    sudo('yum update -y')
-                    sudo('yum install -y ' + self.rhel_packages)
-                    sudo('yum --disablerepo=epel -y update  ca-certificates')
-                    sudo('yum install -y ' + self.rhel_packages)
-                    sudo('wget https://bootstrap.pypa.io/get-pip.py')
-                    sudo('/usr/bin/python2.7 get-pip.py')
-                    sudo('pip install --upgrade pip')
+                    sudo('yum update -y', stdout=configuration_log)
+                    sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                    sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
+                    sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                    sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
+                    sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
+                    sudo('pip install --upgrade pip', stdout=configuration_log)
                     if box_distro[1] in ('6'):
-                        sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages)
-                    else: sudo('pip install ' + self.pip_packages)
+                        sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
+                    else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                 elif box_distro_name in ('sles', 'suse'):
-                    sudo('zyppre update -y')
-                    sudo('zypper install -y ', + self.sles_packages)
+                    sudo('zyppre update -y', stdout=configuration_log)
+                    sudo('zypper install -y ', + self.sles_packages, stdout=configuration_log)
 
 
                 sudo('uname -r')
-                print("Done")
 
             except Exception as e:
                 print("Exceptions has been received. Skipped, proceeding for the next OS.")
+                print(e)
                 # pass
         v.reload(vm_name=self.box_distro_name)
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
-                print("THE MACHINE SEEMS TO BE RELOADED")
                 sudo('uname -r')
                 put(work_path + tar_name, box_work_path + "/" + tar_name,
                     use_sudo=True)
                 #                run("chmod +x " + box_work_path + "/" + tar_name)
-                run("tar -xf " + box_work_path + "/" + tar_name)
-                run("cd " + box_work_path)
+                run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
+                run("cd " + box_work_path, stdout=configuration_log)
                 run("sudo /usr/bin/python2.7 test_main.py")
 
 

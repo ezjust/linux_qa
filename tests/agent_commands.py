@@ -3,6 +3,7 @@ from my_utils.system import *
 
 class AgentCommands(Agent):
     build = "7.0.0"
+    counter = 0
     link = None
 
     def __init__(self):
@@ -28,8 +29,15 @@ class AgentCommands(Agent):
             self.service_activity('rapidrecovery-agent', 'start') # we are restaring agent. Agent has not been configured yet.
             print("next")
             self.status_of_the_service('rapidrecovery-agent', 0) # agent now should be running
-            time.sleep(5)
+
+            while self.error_code_of_the_service('rapidrecovery-vdisk') is not 0 and self.counter <= 12:
+                time.sleep(5)
+                self.counter = self.counter + 1
+                print(self.counter)
+                print("waining")
+
             self.status_of_the_service('rapidrecovery-vdisk', 0)
+
             if self.execute.error_code(self.nbd_check) is not 0:
                 raise Exception("ERROR: There are no open nbd device.")
 
