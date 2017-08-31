@@ -107,7 +107,7 @@ class TestRunner(object):
                     #print("%s" % ('Test %s is: ''FAIL') % key)
                     result = "failed"
                 finally:
-                    self.executor.log("Cleaning Up %s test ....\n" % key),
+                    self.executor.log("Cleaning Up %s test ....\n" % key)
                     test.tearDown()
                     #self.executor.log("Done")
                 print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))

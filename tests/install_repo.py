@@ -4,7 +4,6 @@ import sys
 from my_utils.system import *
 
 class InstallRepo(Repoinstall):
-    build = "7.0.0"
     link = None
 
     def __init__(self):

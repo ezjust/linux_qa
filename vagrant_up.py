@@ -1,18 +1,22 @@
 from __future__ import print_function, with_statement
 import vagrant
 from fabric.api import *
+from fabric.network import disconnect_all
 import os
 import re
 import tarfile
 import ConfigParser
+import time
+import subprocess
 
 log_cm = vagrant.make_file_cm('deployment.log')
 configuration_log = open('configuration.log', mode='a+')
-machine_name = "ubuntu_16.04_x64"
+installation_agent_log = open('installation_agent.log', mode='a+')
 work_path = os.getcwd() + "/" #Returns current directory, where script is run.
 box_work_path = "/home/vagrant"
 tar_name = "linux_qa.tar"
 config = work_path + "/cfg/vagrant_up.ini"
+config_web = work_path + "config.ini"
 
 
 class VagrantAutomation(object):
@@ -23,6 +27,13 @@ class VagrantAutomation(object):
     box_log_object = None
 
 
+    def write_cfg(self, ipaddr, **kwargs):
+        config = ConfigParser.ConfigParser()
+        config.optionxform = str
+        config.readfp(open(config_web))
+        config.set('web', 'ip', ipaddr)
+        with open(config_web, 'w') as configfile:
+            config.write(configfile)
 
     def read_cfg(self, **kwargs):
         self.cp = ConfigParser.ConfigParser()
@@ -35,7 +46,12 @@ class VagrantAutomation(object):
                                 self.cp.get('host', 'box_distro_name'))
         if kwargs != {}:
             self.box_distro_name = kwargs['box_distro_name']
-        print(self.os_list)
+        self.cp.readfp(open(config_web))
+        self.build_agent = self.cp.get('general', 'build_agent')
+        self.destroy_vm = self.cp.getboolean('vagrant', 'destroy_vm')
+        self.reload_vm = self.cp.getboolean('vagrant', 'reload_vm')
+        self.run_web = self.cp.getboolean('web', 'run_web')
+        # print(self.os_list)
 
     def create_tar(self, work_path):
         """Create archive from the place, where tests are run."""
@@ -45,14 +61,31 @@ class VagrantAutomation(object):
             for name in os.listdir(self.work_path):
                 tar.add(name)
 
+    def execute(self, cmd=None):
+        # type: (object) -> object
+        if cmd is not None:
+            self.cmd = cmd
+            p = subprocess.Popen(self.cmd, shell=True,
+                                     stdout=subprocess.PIPE,
+                                     stdin=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+            # ((output, err), code)
+            output, err = p.communicate()
+            print(output)
+
 #@task
     def start_up(self):
         """Starts the specified machine using vagrant"""
         self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
+        try:
+            v.up(vm_name=self.box_distro_name)
+        except Exception:
+            time.sleep(60)
+            v.up(vm_name=self.box_distro_name)
 
-        v.up(vm_name=self.box_distro_name)
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
+            print("Test")
             try:
                 box_distro = self.box_distro_name.split('_')
                 box_distro_name = box_distro[0]
@@ -62,14 +95,12 @@ class VagrantAutomation(object):
                 if box_distro_name in ('ubuntu', 'debian'):
                     clean = "echo `ps -A | grep apt | awk '{print $1}'`"
                     result_clean = run(clean)
-                    print("1111")
-                    print(result_clean)
-                    print(len(result_clean))
-                    print("2222")
+                    # print(result_clean)
+                    # print(len(result_clean))
                     if len(result_clean) is not 0:
                         sudo(stderr=False, command='kill -9 ' + result_clean)
                     sudo('apt-get update', stdout=configuration_log)
-                    sudo('apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+                    sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
                 elif box_distro_name in ('rhel', 'centos'):
                     # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
                     # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
@@ -94,8 +125,19 @@ class VagrantAutomation(object):
             except Exception as e:
                 print("Exceptions has been received. Skipped, proceeding for the next OS.")
                 print(e)
-                # pass
-        v.reload(vm_name=self.box_distro_name)
+                pass
+
+
+            if self.reload_vm:
+                try:
+                    print("Reloading machine")
+                    v.reload(vm_name=self.box_distro_name)
+                except Exception as e:
+                    print(e)
+                    disconnect_all()
+                    v.reload(vm_name=self.box_distro_name)
+                    pass
+
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
                 sudo('uname -r')
@@ -106,10 +148,26 @@ class VagrantAutomation(object):
                 run("cd " + box_work_path, stdout=configuration_log)
                 run("sudo /usr/bin/python2.7 test_main.py")
 
+                if self.run_web:
+                    sudo(
+                        'wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
+                    sudo('chmod +x ./agent_install.sh')
+                    sudo('./agent_install.sh --install ' + self.build_agent,
+                         stdout=installation_agent_log)
+                    ipaddr = sudo(
+                        "ifconfig | grep 10.10. | awk '{print $2}' | sed 's/.*://'")
+
+                    self.write_cfg(ipaddr=ipaddr)
+                    os.system("/usr/bin/python2.7 web.py")
+
+                print("DONE@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
 
             finally:
-                pass
-                v.destroy(vm_name=self.box_distro_name)
+
+                if self.destroy_vm:
+                    print("destroing")
+                    v.destroy(vm_name=self.box_distro_name)
 
 
 
@@ -132,6 +190,14 @@ class VagrantAutomation(object):
                     line = re.sub(r'.*out:', '', line)
                     print(line)
 
+    def parse_installation_agent_log(self):
+        with open("installation_agent.log", 'r') as test_log:
+            words = ["Done", "Failed", "linux"]
+            for line in test_log:
+                if any(s in line for s in words):
+                    line = re.sub(r'.*out:', '', line)
+                    print(line)
+
     def remove_archive(self):
         os.remove(work_path + tar_name)
 
@@ -149,6 +215,8 @@ if __name__ == '__main__':
         start.start_up()
         start.remove_archive()
     start.parse_box_log()
+    if start.run_web:
+        start.parse_installation_agent_log()
 
 
 

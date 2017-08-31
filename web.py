@@ -1,6 +1,8 @@
 import splinter
+import os
 import selenium
 import subprocess
+import ConfigParser
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -17,7 +19,6 @@ import re
 import urllib
 
 
-link = 'https://10.10.61.20:8006/apprecovery/admin'
 # driver.implicitly_wait(10) # seconds
 
 
@@ -32,8 +33,9 @@ class WebAgent(object):
 
     def __init__(self):
         self.driver = webdriver.Firefox()
+        self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
-        self.driver.get(link)
+        self.driver.get(core_link)
 
     def open_core_ui(self):
         try:
@@ -43,6 +45,8 @@ class WebAgent(object):
             asd.send_keys(Keys.TAB + '123asdQ')
             asd.accept()
             print("Core UI is open")
+            time.sleep(2)
+            self.driver.refresh()
 
         except TimeoutException:
             self.driver.close()
@@ -56,8 +60,8 @@ class WebAgent(object):
         except TimeoutException:
             pass
 
-    def find_machine_link(self):
-        print("I am in find machine link")
+    def find_machine_link(self, ip_machine):
+        self.ip_machine = ip_machine
         WebDriverWait(self.driver, self.long_timeout, ignored_exceptions=['selenium.common.exceptions.StaleElementReferenceException']).until(
             EC.presence_of_element_located((By.TAG_NAME, 'a')))
         time.sleep(5)
@@ -75,7 +79,7 @@ class WebAgent(object):
                 test = elem.get_attribute('href')
                 # print "ELEM", elem.text
                 # print "SELF IP", self.ip
-                if elem.text in [self.ip]:
+                if elem.text in [self.ip_machine]:
                     self.agent_link = test
                     self.id_agent = re.split(r'Machines/*', self.agent_link)[1]
                     # print "AGENT LINK", self.agent_link
@@ -100,7 +104,7 @@ class WebAgent(object):
                 # print elem.text
                 # print(self.ip)
                 # print("self.ip  is up")
-                if elem.text in self.ip:
+                if elem.text in self.ip_machine:
                     self.agent_link = test
                     self.id_agent = re.split('Machines/*', self.agent_link)[1]
                     # print(self.agent_link)
@@ -168,9 +172,9 @@ class WebAgent(object):
 
 
 
-    def protect_new_agent(self, ip, username, password):
+    def protect_new_agent(self, ip_machine, username, password):
 
-        self.ip = ip
+        self.ip_machine = ip_machine
         self.username = username
         self.password = password
         agent_link = None
@@ -178,7 +182,7 @@ class WebAgent(object):
 
 
         try:
-            print("I am starting to protect agent %s, %s, %s" % (self.ip, self.username, self.password))
+            print("I am starting to protect agent %s, %s, %s" % (self.ip_machine, self.username, self.password))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/div[1]/span")))
             new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/div[1]/span")
             new.click()
@@ -192,7 +196,7 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='hostName']")))
 
             hostname = self.driver.find_element_by_xpath(".//*[@id='hostName']")
-            hostname.send_keys(self.ip)
+            hostname.send_keys(self.ip_machine)
 
             usernm = self.driver.find_element_by_xpath(".//*[@id='userName']")
             usernm.send_keys(self.username)
@@ -232,16 +236,24 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             finish = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             finish.click()
-            print("The agent %s with the credentials: %s and %s is protected" % (self.ip, self.username, self.password))
+            print("The agent %s with the credentials: %s and %s is protected" % (self.ip_machine, self.username, self.password))
 
 
-            while self.find_machine_link() is None:
-                print(self.find_machine_link())
+            while self.find_machine_link(self.ip_machine) is None:
                 print("waiting protected machine to appear")
                 time.sleep(5)
             print("Machine is protected. New transfer will be started")
 
-            self.driver.get(str(self.agent_link))
+            try:
+                self.driver.get(str(self.agent_link))
+            except selenium.common.exceptions.TimeoutException:
+                time.sleep(10)
+                print(self.driver.current_url)
+                print(self.agent_link)
+            finally:
+                if self.driver.current_url != self.agent_link:
+                    print("They are differ")
+                    raise Exception
 
             self.find_last_job_id()
 
@@ -256,18 +268,69 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "setScheduleForAgent")))
             schedule = self.driver.find_element_by_id("setScheduleForAgent")
             schedule.click()
-
+            time.sleep(10)
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='weekdaysPeriod']")))
             every = self.driver.find_element_by_xpath(".//*[@id='weekdaysPeriod']")
             every.send_keys(Keys.LEFT_CONTROL, "a")
             every.send_keys(Keys.DELETE)
             every.send_keys("8")
-
+            time.sleep(10)
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
             apply.click()
 
             print("Schedule is configured")
+            print("HERE1")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
+            force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
+            force_snapshot.click()
+            print("HERE2")
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            print("HERE3")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
+            first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
+            first_force.click()
+            print("HERE4")
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+            print("HERE5")
+
+
+        finally:
+            pass
+
+
+
+
+
+
+
+
+
+    def force_snapshot(self, ip_machine, base):
+
+        self.ip = ip_machine
+        self.base = base
+        agent_link = None
+        id = None
+
+
+        try:
+            while self.find_machine_link(self.ip) is None:
+                print(self.find_machine_link(self.ip))
+                print("waiting protected machine to appear")
+                time.sleep(5)
+            print("Machine is protected. New transfer will be started")
+
+            self.driver.get(str(self.agent_link))
+
+            self.find_last_job_id()
+
+            if self.driver.current_url != self.agent_link:
+                self.driver.get(str(self.agent_link))
+                time.sleep(10)
+
             # print("HERE1")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
@@ -275,9 +338,19 @@ class WebAgent(object):
             # print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             # print("HERE3")
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
-            first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
-            first_force.click()
+
+            #default ( First time is base, all other should be incremental )
+            if self.base == False:
+                WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.CLASS_NAME, "default mr10")))
+                force_snapshot_default = self.driver.find_element_by_class_name("default mr10")
+                force_snapshot_default.click()
+            else:
+                WebDriverWait(self.driver, self.short_timeout).until(
+                    EC.element_to_be_clickable(
+                        (By.CLASS_NAME, "fr")))
+                force_base_image = self.driver.find_element_by_class_name(
+                    "fr")
+                force_base_image.click()
             # print("HERE4")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
@@ -288,25 +361,42 @@ class WebAgent(object):
         finally:
             pass
 
-    def remove_agent_by_id(self, ip):
 
 
-        self.ip = ip
+
+    def remove_agent_by_id(self, ip_machine):
+
+
+        self.ip = ip_machine
 
         try:
 
-            self.find_machine_link()
+            self.find_machine_link(self.ip)
             counter = 0
             while self.agent_link == None:
                 time.sleep(5)
-                self.find_machine_link()
+                self.find_machine_link(self.ip)
                 print("I got 'None' for the agent_link, 'timeout in 60 sec' is applied.")
                 counter = counter + 1
                 if counter == 12 :
                     self.driver.close()
                     print("There was not found machine for remove.")
+            try:
+                self.driver.get(str(self.agent_link))
+                print("testplace")
+            except selenium.common.exceptions.TimeoutException:
+                time.sleep(10)
+                print("testplace2")
 
-            self.driver.get(str(self.agent_link))
+            finally:
+                print("testplace3")
+
+                if self.driver.current_url != self.agent_link:
+                    print self.driver.current_url
+                    print self.agent_link
+                    print Exception
+
+
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")))
             remove_agent = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")
@@ -328,18 +418,18 @@ class WebAgent(object):
 
 
 
-    def status(self, ip):
-        self.ip = ip
+    def status(self, ip_machine):
+        self.ip = ip_machine
         agent_link = None
         self.status_of_the_job = None
         job_status = None
         job_name = None
 
         try:
-            self.find_machine_link()
+            self.find_machine_link(self.ip)
             while self.agent_link == None:
                 time.sleep(5)
-                self.find_machine_link()
+                self.find_machine_link(self.ip)
                 print("I got None for agent_link, while is applied.")
         except OSError as e:
             raise Exception("Here is bug in status with the agent link.")
@@ -480,19 +570,19 @@ class WebAgent(object):
         self.job_status = job_status
         print(self.job_id + " IS JOB ID OF THE LAST RUNNING JOB")
 
-    def rollback(self, ip):
+    def rollback(self, ip_machine):
         '''In this function we get id of the job from the events of the 
               dedicated agent and gets the original job id we can use in future.
               Without this function we cannot proceed in the get resolution
               status of the job.'''
-        self.ip = ip
+        self.ip = ip_machine
 
-        self.ip_cd = ip_cd
-        self.pass_cd = pass_cd
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
 
         agent_link = None
 
-        self.find_machine_link()
+        self.find_machine_link(self.ip)
 
         self.find_last_job_id()
 
@@ -577,17 +667,17 @@ class WebAgent(object):
         time.sleep(5)
         print("COMPLETED ROLLBACK")
 
-    def auto_bmr(self, ip_cd, pass_cd):
+    def auto_bmr(self, ip_machine, vmname, ip_livecd, pass_livecd):
         '''In this function we get id of the job from the events of the 
                     dedicated agent and gets the original job id we can use in future.
                     Without this function we cannot proceed in the get resolution
                     status of the job.'''
-        self.ip = ip
-        self.vmname = vmname
-        self.ip_cd = ip_cd
-        self.pass_cd = pass_cd
+        self.ip = ip_machine
+        self.vmname = vbox_vmname
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
         agent_link = None
-        self.find_machine_link()
+        self.find_machine_link(self.ip)
         self.find_last_job_id()
         status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
         start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
@@ -599,9 +689,13 @@ class WebAgent(object):
         print("Working here")
 
         status = self.execute(cmd=status_vm)[0][0]
-        print(status)
-        if status in ["powered", "saved"]:
-            print "True"
+
+        status = status.split()[0]
+
+        print status
+
+        if status in ['powered', 'saved']:
+            print "Truesss"
             if "powered" in status:
                 self.execute(cmd=boot_vm_dvd)
                 time.sleep(10)
@@ -769,11 +863,11 @@ class WebAgent(object):
         else:
             return (output, err)
 
-    def bmr_bootable(self, ip_cd, pass_cd, vmname):
-        self.vmname = vmname
-        self.ip = ip
-        self.ip_cd = ip_cd
-        self.pass_cd = pass_cd
+    def bmr_bootable(self, ip_machine, ip_livecd, pass_livecd, vbox_vmname):
+        self.vmname = vbox_vmname
+        self.ip = ip_machine
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
         self.bootability = None
         counter = 0
         poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
@@ -782,6 +876,9 @@ class WebAgent(object):
         boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
         restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
         status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        clean_dvd = "sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive"
+        check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
+
         try:
             # print(self.error_code_unix_command(cmd=poweroff_vm))
             status = self.execute(cmd=status_vm)[0][0]
@@ -793,6 +890,8 @@ class WebAgent(object):
             self.execute(cmd=boot_vm_disk)
             print("Machine settings: Boot from disk")
             time.sleep(10)
+            self.execute(cmd=clean_dvd)
+            time.sleep(5)
             self.execute(cmd=start_vm)
             print("Machine started")
 
@@ -839,33 +938,61 @@ class WebAgent(object):
 
 
 if __name__ == "__main__":
-    ip = "10.10.35.168"
-    username = "rr"
-    password = "123asdQ"
-    ip_cd = "10.10.38.10"
-    pass_cd = "123asdQQ"
-    vmname = "livedvd"
 
+    work_path = os.getcwd() + "/"  # Returns current directory, where script is run.
+    config = work_path + "config.ini"
+
+    def read_cfg():
+        cp = ConfigParser.ConfigParser()
+        cp.readfp(open(config))
+        ip_machine = cp.get('web', 'ip')
+        username_machine = cp.get('web', 'username_machine')
+        password_machine = cp.get('web', 'password_machine')
+        ip_livecd = cp.get('web', 'ip_livecd')
+        pass_livecd = cp.get('web', 'pass_livecd')
+        vbox_vmname = cp.get('web', 'vbox_livedvdname')
+        core_ip = cp.get('general', 'core_ip')
+        core_link = 'https://' + core_ip +':8006/apprecovery/admin'
+        web_count = cp.get('web', 'web_count')
+        protect_agent = cp.get('web', 'protect_agent')
+        rollback_agent = cp.get('web', 'rollback_agent')
+        auto_bmr_agent = cp.get('web', 'rollback_agent')
+        bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
+        force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
+        return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent
+
+
+    ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent = read_cfg()
     a = WebAgent()
+
     try:
 
         a.open_core_ui()
         # a.protect_new_agent(ip, username, password)
         # a.status(ip)
-        for i in range(0,9):
-                # a.protect_new_agent(ip, username, password)
-                # a.status(ip)
-                # a.rollback(ip)
-                # a.status(ip)
-                a.auto_bmr(ip_cd, pass_cd)
-                a.status(ip)
-                a.bmr_bootable(ip_cd, pass_cd, vmname)
-                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        for i in range(0, int(web_count)):
+            if protect_agent is "1":
+                a.protect_new_agent(ip_machine, username_machine, password_machine)
+                a.status(ip_machine)
+            if force_snapshot_agent is "1":
+                a.force_snapshot(ip_machine, base=True)
+                a.status(ip_machine)
+                a.force_snapshot(ip_machine, base=False)
+                a.status(ip_machine)
+            if rollback_agent is "1":
+                a.rollback(ip_machine)
+                a.status(ip_machine)
+            if auto_bmr_agent is "1":
+                a.auto_bmr(ip_machine, vbox_vmname, ip_livecd, pass_livecd)
+                a.status(ip_machine)
+            if bmr_bootable_agent is "1":
+                a.bmr_bootable(ip_machine, ip_livecd, pass_livecd, vbox_vmname)
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
     finally:
         a.driver.get_screenshot_as_file(filename="/tmp/ERROR_image")
-        # a.remove_agent_by_id(ip)
+        a.remove_agent_by_id(ip_machine)
         a.driver.close()
         pass
 

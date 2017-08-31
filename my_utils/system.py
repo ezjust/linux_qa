@@ -5,6 +5,7 @@ import requests
 import time
 import errno
 from datetime import datetime
+import ConfigParser
 
 
 
@@ -39,6 +40,8 @@ class Executor(object):
     __logDir = "Logs"
     __logFile = None
     __debug = True
+    distr = SystemUtils()
+
 
     def __init__(self, cmd=None):
         self.cmd = cmd
@@ -52,6 +55,22 @@ class Executor(object):
             cls.__logFile = open(cls.__logDir + "/Log-%s.log" % start_log_time,
                                  "w+")
         return cls.__instance
+
+
+
+
+    def package_manager(self):
+
+        distributive = self.distr.distname().split()
+        distributive = distributive[0]
+        if distributive.lower() in ["rhel", "centos", "oracle"]:
+            return "yum"
+        elif distributive.lower() in ["ubuntu", "debian"]:
+            return "apt-get"
+        elif distributive.lower() in ["suse", "sles"]:
+            return "zypper"
+        else:
+            raise ValueError('The package manager of the system is not recognized')
 
     def execute(self, cmd=None):
         # type: (object) -> object
@@ -71,7 +90,7 @@ class Executor(object):
             raise Exception("Exception: '%s' command finished with error code %d" %(self.cmd, err))
         elif err is 100:
             count = 0
-            print('This is err %s' % err)
+            # print('This is err %s' % err)
             while err is 100:
 
                 p = subprocess.Popen(self.cmd, shell=True,
@@ -87,9 +106,21 @@ class Executor(object):
                 p_status = p.wait()
                 # error_code = p.communicate()[0]
                 print("%s :: I am in %s retry. 100 error core is received for '%s' command" % (time.ctime(), count, self.cmd))
-                print(err)
+                # print(err)
                 count+=1
-                time.sleep(20)
+                time.sleep(60)
+                if 'install' in self.cmd or 'update' in self.cmd:
+                    clean_all = self.package_manager() + " clean all"
+                    self.execute(cmd=clean_all)
+                    find_all_apt = "ps -A | grep apt | awk '{print $1}'"
+                    if self.error_code(cmd=find_all_apt) is not 100:
+                        result_find = self.execute(find_all_apt)[0][0]
+                        # print result_find
+                        if len(result_find) is not 0:
+                            kill = "kill -9 " + result_find
+                            # print kill
+                            self.execute(kill)
+
 
             return (output, err)
         else:
@@ -144,7 +175,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     # test = SystemUtils()
     # test2 = test.distr()
-    build = "7.0.0"
+    build = None
     agent = "rapidrecovery-agent"
     repo =  "rapidrecovery-repo"
     link = None
@@ -156,6 +187,14 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def __init__(self):
         super(SystemUtils, self).__init__()
+
+    def read_cfg(self):
+        conf_file = "config.ini"
+        self.conf_parser = ConfigParser.ConfigParser()
+        self.conf_parser.optionxform = str
+        self.conf_parser.readfp(open(conf_file))
+        self.test_list = dict(self.conf_parser.items("tests"))
+        self.build = self.conf_parser.get('general', 'build_agent')
 
     def install_distname(self):
         distributive = self.distname().split()
@@ -238,7 +277,8 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             raise ValueError('The version of the distributive is not recognized')
 
     def create_link(self):
-        build = Repoinstall.build
+        self.read_cfg()
+        build = self.build
         check = Repoinstall()
         test = SystemUtils()
         link = 'https://s3.amazonaws.com/repolinux/' + build + '/repo-packages/rapidrecovery-repo-' + check.install_distname() + check.install_version() + '-' + test.machine_type() + '.' + check.install_packmanager()
@@ -279,11 +319,11 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             execute.execute(update)
             #print self.agent
             clean_all = "sudo " + check.software_manager() + " clean all"
-            print(clean_all)
+            # print(clean_all)
             execute.execute(clean_all)
             execute.execute(update)
             installation = "sudo " + check.software_manager() + " install" + " -y " + self.agent
-            print installation
+            # print installation
             execute.execute(installation)
 
         except Exception as e:
@@ -323,17 +363,17 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 execute.execute(unistallation_other)
             not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
             not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
-            print("completed uninstall agent")
+            # print("completed uninstall agent")
 
     def uninstall_autoremove(self):
         execute = Executor()
-        print(self.install_version())
+        # print(self.install_version())
         version = self.install_version()
         if version is "6":
             uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
             execute.execute(uninstallation_dkms)
         else:
-            print("I am in else statement")
+            # print("I am in else statement")
             autoremove = "sudo " + self.software_manager() + " -y" + " autoremove"
             execute.execute(autoremove)
             uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
@@ -366,7 +406,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             result = False
         else:
             raise Exception("I have received not [0, 1] exit codes for the %s" % self.command)
-        print(self.command + " is %s" % result)
+        # print(self.command + " is %s" % result)
         return result
 
 
@@ -378,16 +418,14 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         self.cmd = cmd
         self.expected_result = expected_result
         if self.expected_result is True:
-            print(self.get_installed_package(self.cmd))
             if self.expected_result is self.get_installed_package(self.cmd):
-                return
+                return True
             else:
-                print(self.get_installed_package(self.cmd))
                 raise Exception(
                     "%s package is NOT installed. But should be installed." % self.cmd)
         else:
             if self.expected_result is self.get_installed_package(self.cmd):
-                return
+                return True
             else:
                 print(" self.get_installed_package(self.cmd) is %s" % self.get_installed_package(self.cmd))
                 print(" self.expected_result is %s" % self.expected_result)
@@ -398,7 +436,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def return_of_unix_command(self, command):
         self.command = command
         result = self.execute.execute(self.command)[0][0]
-        print result
         return result
 
 
@@ -455,7 +492,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             command = '/etc/init.d/%s %s' % (self.cmd, self.action)
             self.execute.execute(command)
         else:
-            raise Exception("Pizdec!")
+            raise Exception("failed to start service!")
 
 
 class Agent(Repoinstall):
@@ -488,7 +525,6 @@ class Agent(Repoinstall):
 
     def bsctl_hash(self):
         bsctl_hash = self.execute.execute(self.bsctl_v)
-        print(bsctl_hash)
         return bsctl_hash
 
     def rapidrecovery_vss_hash(self):
@@ -496,7 +532,7 @@ class Agent(Repoinstall):
         while len(result) is 0:
             result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
             time.sleep(5)
-            print("Waiting for the rapidrecovery_vss_v")
+            # print("Waiting for the rapidrecovery_vss_v")
         rapidrecovery_vss_hash = self.execute.execute(self.rapidrecovery_vss_v)
         return rapidrecovery_vss_hash
 
@@ -512,4 +548,55 @@ class Agent(Repoinstall):
     def rapidrecovery_vss_installed(self):
         result = self.execute.execute(self.rapid_vss_installed)[0][0].rstrip()
         return result
+
+    def rapidrecovery_config_api(self, port=None, user=None, method=None, build=None, start=None, vault=None, delete_user=None):
+        '''
+        :param port: 8006 
+        :param user: rr
+        :param method: firewalld, lokkit
+        :param build: all, 0, 1, 2
+        :param start: true
+        :param vault: on, off
+        :param delete_user: rr
+        :return: True/False
+        '''
+        if build:
+            self.build = build
+        if port:
+            self.port = port
+        if user:
+            self.user = user
+        if start:
+            self.start = start
+        if method:
+            self.method = method
+        if vault:
+            self.vault = vault
+        if delete_user:
+            self.delete_user = delete_user
+
+        config = "/usr/bin/rapidrecovery-config"
+        try:
+            if port:
+                self.execute.execute(cmd=config + " -p " + self.port)
+            if user:
+                self.execute.execute(cmd=config + " -u " + self.user)
+            if build:
+                self.execute.execute(cmd=config + " -m " + self.build)
+            if method:
+                self.execute.execute(cmd=config + " -f " + self.method)
+            if start:
+                self.execute.execute(cmd=config + " -s ")
+            if vault:
+                self.execute.execute(cmd=config + " -v " + self.vault)
+            if delete_user:
+                self.execute.execute(cmd=config + " -d " + self.delete_user)
+            return True
+
+        except Exception as E:
+            print E
+            return False
+
+
+
 

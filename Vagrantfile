@@ -1,11 +1,38 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+lfs_disk1 = './tmp/disk1.vdi'
+lfs_disk2 = './tmp/disk2.vdi'
+lfs_disk3 = './tmp/disk3.vdi'
+lfs_disk4 = './tmp/disk4.vdi'
+lfs_disk5 = './tmp/disk5.vdi'
 
 Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 2
+    unless File.exist?(lfs_disk1)
+        v.customize ['createhd', '--filename', lfs_disk1, '--size', 20 * 1024]
+    end
+    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', lfs_disk1]
+    unless File.exist?(lfs_disk2)
+        v.customize ['createhd', '--filename', lfs_disk2, '--size', 20 * 1024]
+    end
+    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', lfs_disk2]
+    unless File.exist?(lfs_disk3)
+        v.customize ['createhd', '--filename', lfs_disk3, '--size', 20 * 1024]
+    end
+    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 3, '--device', 0, '--type', 'hdd', '--medium', lfs_disk3]
+    unless File.exist?(lfs_disk4)
+        v.customize ['createhd', '--filename', lfs_disk4, '--size', 20 * 1024]
+    end
+    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 4, '--device', 0, '--type', 'hdd', '--medium', lfs_disk4]
+    unless File.exist?(lfs_disk5)
+        v.customize ['createhd', '--filename', lfs_disk5, '--size', 20 * 1024]
+    end
+    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 5, '--device', 0, '--type', 'hdd', '--medium', lfs_disk5]
+
   end
+
   config.vm.define "centos_7_x64" do |centos7|
     centos7.vm.box = "/home/mbugaiov/Documents/boxes/centos_7_x64.box"
     centos7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"

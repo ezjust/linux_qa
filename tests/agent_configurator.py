@@ -3,7 +3,6 @@ from __future__ import print_function
 from my_utils.system import *
 
 class AgentConfigurator(Agent):
-    build = "7.0.0"
     link = None
 
     def __init__(self):
@@ -14,6 +13,8 @@ class AgentConfigurator(Agent):
 
     def tearDown(self):
         self.uninstall_agent()
+        print("******")
+
 
     def runTest(self):
 

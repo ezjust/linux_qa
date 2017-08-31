@@ -24,3 +24,4 @@ class UninstallAgent(Repoinstall):
 
     def tearDown(self):
         self.uninstall_agent()
+        print("******")
