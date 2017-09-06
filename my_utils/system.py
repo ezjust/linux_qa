@@ -120,6 +120,10 @@ class Executor(object):
                             kill = "kill -9 " + result_find
                             # print kill
                             self.execute(kill)
+                    if self.error_code(cmd=self.package_manager() + " update") is 0:
+                        self.execute(cmd=self.package_manager() + " update")
+                if 'remove' in self.cmd:
+                    break
 
 
             return (output, err)
@@ -586,7 +590,7 @@ class Agent(Repoinstall):
             if method:
                 self.execute.execute(cmd=config + " -f " + self.method)
             if start:
-                self.execute.execute(cmd=config + " -s ")
+                self.execute.execute(cmd=config + " -s")
             if vault:
                 self.execute.execute(cmd=config + " -v " + self.vault)
             if delete_user:
@@ -595,8 +599,22 @@ class Agent(Repoinstall):
 
         except Exception as E:
             print E
-            return False
+            raise Exception
 
 
+    def parse_configuration_log(self):
+        configuration_log = "/var/log/apprecovery/configuration.log"
+        try:
+            with open(configuration_log, 'r') as f:
+                words = ["Failed", "Error", "8006"]
+                for line in f:
+                    if any(s in line for s in words):
+                        print(line)
+                        words_error = ["Failed", "Error"]
+                        if any(k in line for k in words_error):
+                            print(line)
+                            raise Exception("There are Failed states in the configuration.")
 
-
+        except Exception as E:
+            print E
+            raise Exception

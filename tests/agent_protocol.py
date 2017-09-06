@@ -1,5 +1,4 @@
 from __future__ import print_function
-#sys.path.append("..")
 from my_utils.system import *
 
 
@@ -23,7 +22,6 @@ class AgentProtocol(Agent):
     def tearDown(self):
         pass
         self.uninstall_agent()
-        print("******")
 
 
     def runTest(self):

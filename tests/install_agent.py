@@ -14,7 +14,6 @@ class InstallAgent(Repoinstall, SystemUtils):
 
         os.remove(self.repo_path)
         self.uninstall_agent()
-        print("******")
 
 
     def runTest(self):
@@ -25,7 +24,6 @@ class InstallAgent(Repoinstall, SystemUtils):
             else:
                 self.status_of_the_service('rapidrecovery-agent' , 4) #error code 3 is received when service is not istalled
 
-            print("1")
             self.install_agent_fromrepo()
             self.check_package_installed('rapidrecovery-repo', expected_result=True)
             self.check_package_installed('rapidrecovery-agent', expected_result=True)

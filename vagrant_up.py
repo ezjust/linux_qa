@@ -50,7 +50,8 @@ class VagrantAutomation(object):
         self.build_agent = self.cp.get('general', 'build_agent')
         self.destroy_vm = self.cp.getboolean('vagrant', 'destroy_vm')
         self.reload_vm = self.cp.getboolean('vagrant', 'reload_vm')
-        self.run_web = self.cp.getboolean('web', 'run_web')
+        self.run_web = self.cp.getboolean('general', 'run_web')
+        self.run_test = self.cp.getboolean('general', 'run_test')
         # print(self.os_list)
 
     def create_tar(self, work_path):
@@ -141,14 +142,19 @@ class VagrantAutomation(object):
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
                 sudo('uname -r')
-                put(work_path + tar_name, box_work_path + "/" + tar_name,
-                    use_sudo=True)
-                #                run("chmod +x " + box_work_path + "/" + tar_name)
-                run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
-                run("cd " + box_work_path, stdout=configuration_log)
-                run("sudo /usr/bin/python2.7 test_main.py")
+                if self.run_test:
+                    put(work_path + tar_name, box_work_path + "/" + tar_name,
+                        use_sudo=True)
+                    #                run("chmod +x " + box_work_path + "/" + tar_name)
+                    run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
+                    run("cd " + box_work_path, stdout=configuration_log)
+                    run("sudo /usr/bin/python2.7 test_main.py")
 
                 if self.run_web:
+                    sudo('wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
+                    sudo('chmod +x ./configurator.sh')
+                    sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
+                    run('lsblk')
                     sudo(
                         'wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
                     sudo('chmod +x ./agent_install.sh')
@@ -160,7 +166,7 @@ class VagrantAutomation(object):
                     self.write_cfg(ipaddr=ipaddr)
                     os.system("/usr/bin/python2.7 web.py")
 
-                print("DONE@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                print("Testing is completed")
 
 
             finally:
@@ -168,7 +174,11 @@ class VagrantAutomation(object):
                 if self.destroy_vm:
                     print("destroing")
                     v.destroy(vm_name=self.box_distro_name)
-
+                print("------------------------------------------------------------------------------------------------------------------"
+                      "\n"
+                      "\n"
+                      "\n"
+                      "------------------------------------------------------------------------------------------------------------------")
 
 
     def open_box_log(self):
@@ -177,6 +187,10 @@ class VagrantAutomation(object):
     def clean_box_log(self):
         if os.path.isfile(self.__logDir + VagrantAutomation.box_log):
             os.remove(self.__logDir + VagrantAutomation.box_log)
+
+    def clean_installation_agent_log(self):
+        if os.path.isfile("installation_agent.log"):
+            os.remove("installation_agent.log")
 
     def write_in_box_log(self, message):
         self.message = message
@@ -192,7 +206,7 @@ class VagrantAutomation(object):
 
     def parse_installation_agent_log(self):
         with open("installation_agent.log", 'r') as test_log:
-            words = ["Done", "Failed", "linux"]
+            words = ["Failed", "Error"]
             for line in test_log:
                 if any(s in line for s in words):
                     line = re.sub(r'.*out:', '', line)
@@ -207,6 +221,7 @@ if __name__ == '__main__':
     start = VagrantAutomation()
     start.read_cfg()
     start.clean_box_log()
+    start.clean_installation_agent_log()
     start.open_box_log()
     for vm in start.os_list:
         print(vm + " : executing....")

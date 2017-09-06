@@ -35,6 +35,8 @@ class WebAgent(object):
         self.driver = webdriver.Firefox()
         self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
+        self.driver.accept_untrusted_certs = True
+        self.driver.assume_untrusted_cert_issuer = True
         self.driver.get(core_link)
 
     def open_core_ui(self):
@@ -238,11 +240,12 @@ class WebAgent(object):
             finish.click()
             print("The agent %s with the credentials: %s and %s is protected" % (self.ip_machine, self.username, self.password))
 
-
-            while self.find_machine_link(self.ip_machine) is None:
+            counter = 0
+            while self.find_machine_link(self.ip_machine) is None and counter < 10:
                 print("waiting protected machine to appear")
-                time.sleep(5)
-            print("Machine is protected. New transfer will be started")
+                time.sleep(50)
+                counter = counter + 1
+
 
             try:
                 self.driver.get(str(self.agent_link))
@@ -254,6 +257,8 @@ class WebAgent(object):
                 if self.driver.current_url != self.agent_link:
                     print("They are differ")
                     raise Exception
+
+            print("Machine is protected. New transfer will be started")
 
             self.find_last_job_id()
 
@@ -268,13 +273,11 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "setScheduleForAgent")))
             schedule = self.driver.find_element_by_id("setScheduleForAgent")
             schedule.click()
-            time.sleep(10)
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='weekdaysPeriod']")))
             every = self.driver.find_element_by_xpath(".//*[@id='weekdaysPeriod']")
             every.send_keys(Keys.LEFT_CONTROL, "a")
             every.send_keys(Keys.DELETE)
             every.send_keys("8")
-            time.sleep(10)
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
             apply.click()
@@ -300,14 +303,6 @@ class WebAgent(object):
         finally:
             pass
 
-
-
-
-
-
-
-
-
     def force_snapshot(self, ip_machine, base):
 
         self.ip = ip_machine
@@ -321,7 +316,7 @@ class WebAgent(object):
                 print(self.find_machine_link(self.ip))
                 print("waiting protected machine to appear")
                 time.sleep(5)
-            print("Machine is protected. New transfer will be started")
+            print("Going to start new snapshot.")
 
             self.driver.get(str(self.agent_link))
 
@@ -331,31 +326,34 @@ class WebAgent(object):
                 self.driver.get(str(self.agent_link))
                 time.sleep(10)
 
-            # print("HERE1")
+            print("HERE1")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
             force_snapshot.click()
             # print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            # print("HERE3")
+            print("HERE3")
 
             #default ( First time is base, all other should be incremental )
             if self.base == False:
-                WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.CLASS_NAME, "default mr10")))
-                force_snapshot_default = self.driver.find_element_by_class_name("default mr10")
+                print("Incremental snapshot is starting...")
+                WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")))
+                force_snapshot_default = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")
                 force_snapshot_default.click()
             else:
+                print("Base snapshot is starting...")
                 WebDriverWait(self.driver, self.short_timeout).until(
                     EC.element_to_be_clickable(
-                        (By.CLASS_NAME, "fr")))
-                force_base_image = self.driver.find_element_by_class_name(
-                    "fr")
+                        (By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[2]/button[2]")))
+                force_base_image = self.driver.find_element_by_xpath(
+                    ".//*[@id='popup1']/div/div[6]/form/div[2]/button[2]")
                 force_base_image.click()
-            # print("HERE4")
+                print("HERE4")
+                self.wait_for_element_invisible(element_id="lpLoadingContent")
+                self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
+
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
-            self.wait_for_element_invisible(element_id="lpLoadingContent")
-            # print("HERE5")
+            print("HERE5")
 
 
         finally:
@@ -374,7 +372,7 @@ class WebAgent(object):
             self.find_machine_link(self.ip)
             counter = 0
             while self.agent_link == None:
-                time.sleep(5)
+                time.sleep(2.5)
                 self.find_machine_link(self.ip)
                 print("I got 'None' for the agent_link, 'timeout in 60 sec' is applied.")
                 counter = counter + 1
@@ -383,27 +381,22 @@ class WebAgent(object):
                     print("There was not found machine for remove.")
             try:
                 self.driver.get(str(self.agent_link))
-                print("testplace")
+
             except selenium.common.exceptions.TimeoutException:
                 time.sleep(10)
-                print("testplace2")
+
 
             finally:
-                print("testplace3")
 
                 if self.driver.current_url != self.agent_link:
                     print self.driver.current_url
                     print self.agent_link
                     print Exception
 
-
-
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")))
             remove_agent = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")
             remove_agent.click()
-
             time.sleep(2)
-
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[1]/div/div/label/span")))
             click_remove_with_recovery_points = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[1]/div/div/label/span")
             click_remove_with_recovery_points.click()
@@ -412,11 +405,8 @@ class WebAgent(object):
             click_remove_default = self.driver.find_element_by_xpath(".//*[@id='btnRemoveProtection']")
             click_remove_default.click()
             print("The agent removed")
-        except OSError as e:
-            raise Exception("Something goes wrong with remove of the agent")
-
-
-
+        finally:
+            pass
 
     def status(self, ip_machine):
         self.ip = ip_machine
@@ -667,7 +657,7 @@ class WebAgent(object):
         time.sleep(5)
         print("COMPLETED ROLLBACK")
 
-    def auto_bmr(self, ip_machine, vmname, ip_livecd, pass_livecd):
+    def auto_bmr(self, ip_machine, vbox_vmname, ip_livecd, pass_livecd):
         '''In this function we get id of the job from the events of the 
                     dedicated agent and gets the original job id we can use in future.
                     Without this function we cannot proceed in the get resolution
@@ -720,10 +710,10 @@ class WebAgent(object):
         soup = BeautifulSoup(html, "html.parser")
         #substring = soup.find_all('button', {"class": "btn dropdown-toggle"}) '''worked in 7.0.0 and not working in 6.1.3'''
         substring = soup.find_all('button', {"type": "button"})
-        print substring
+        # print substring
         status = re.split('type=*', str(substring))
         status = re.split('"', str(status[0]))
-        print(status)
+        # print(status)
         select = self.driver.find_element_by_xpath(
             ".//*[@id='" + status[5] + "']")
         select.click()
@@ -956,7 +946,7 @@ if __name__ == "__main__":
         web_count = cp.get('web', 'web_count')
         protect_agent = cp.get('web', 'protect_agent')
         rollback_agent = cp.get('web', 'rollback_agent')
-        auto_bmr_agent = cp.get('web', 'rollback_agent')
+        auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
         bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
         force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
         return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent
@@ -983,16 +973,16 @@ if __name__ == "__main__":
                 a.rollback(ip_machine)
                 a.status(ip_machine)
             if auto_bmr_agent is "1":
+                print("BMR!!!")
                 a.auto_bmr(ip_machine, vbox_vmname, ip_livecd, pass_livecd)
                 a.status(ip_machine)
             if bmr_bootable_agent is "1":
                 a.bmr_bootable(ip_machine, ip_livecd, pass_livecd, vbox_vmname)
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
+        print("Completed Web Testing")
 
     finally:
         a.driver.get_screenshot_as_file(filename="/tmp/ERROR_image")
         a.remove_agent_by_id(ip_machine)
         a.driver.close()
-        pass
 

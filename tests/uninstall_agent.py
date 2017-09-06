@@ -11,7 +11,6 @@ class UninstallAgent(Repoinstall):
         self.install_agent_fromrepo()
 
     def runTest(self):
-        execute = Executor()
         self.uninstall_agent()
         self.check_package_installed('dkms', expected_result=True) # we aren't remove dkms by default
 
@@ -24,4 +23,3 @@ class UninstallAgent(Repoinstall):
 
     def tearDown(self):
         self.uninstall_agent()
-        print("******")

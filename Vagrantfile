@@ -11,23 +11,23 @@ Vagrant.configure("2") do |config|
     v.memory = 2048
     v.cpus = 2
     unless File.exist?(lfs_disk1)
-        v.customize ['createhd', '--filename', lfs_disk1, '--size', 20 * 1024]
+        v.customize ['createhd', '--filename', lfs_disk1, '--size', 10 * 1024]
     end
     v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', lfs_disk1]
     unless File.exist?(lfs_disk2)
-        v.customize ['createhd', '--filename', lfs_disk2, '--size', 20 * 1024]
+        v.customize ['createhd', '--filename', lfs_disk2, '--size', 10 * 1024]
     end
     v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', lfs_disk2]
     unless File.exist?(lfs_disk3)
-        v.customize ['createhd', '--filename', lfs_disk3, '--size', 20 * 1024]
+        v.customize ['createhd', '--filename', lfs_disk3, '--size', 10 * 1024]
     end
     v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 3, '--device', 0, '--type', 'hdd', '--medium', lfs_disk3]
     unless File.exist?(lfs_disk4)
-        v.customize ['createhd', '--filename', lfs_disk4, '--size', 20 * 1024]
+        v.customize ['createhd', '--filename', lfs_disk4, '--size', 10 * 1024]
     end
     v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 4, '--device', 0, '--type', 'hdd', '--medium', lfs_disk4]
     unless File.exist?(lfs_disk5)
-        v.customize ['createhd', '--filename', lfs_disk5, '--size', 20 * 1024]
+        v.customize ['createhd', '--filename', lfs_disk5, '--size', 10 * 1024]
     end
     v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 5, '--device', 0, '--type', 'hdd', '--medium', lfs_disk5]
 

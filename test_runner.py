@@ -111,6 +111,10 @@ class TestRunner(object):
                     test.tearDown()
                     #self.executor.log("Done")
                 print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
+                print("================================================================="
+                      "\n"
+                      "\n"
+                      "=================================================================")
 
         self.executor.log("\vTests are finished. %d are OK, %d are FAILED\n" % (stat_loops.passed, stat_loops.failed))
 

@@ -16,8 +16,6 @@ class AgentCommands(Agent):
         pass
         self.uninstall_agent()
         self.unload_module()
-        print("******")
-
 
     def runTest(self):
         try:
