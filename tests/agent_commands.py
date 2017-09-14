@@ -53,20 +53,27 @@ class AgentCommands(Agent):
             if self.error_code_of_the_service(self.nbd_check) is not 0:
                 raise Exception("ERROR: There are no open nbd device.")
 
+            counter = 0
             while str(self.rapidrecovery_vss_installed().rstrip()) != str(
-                    "installed"):
+                    "installed") and counter <= 6:
                 """We are awiting until rapidrecovery-vss is build on the box"""
                 time.sleep(5)
-                pass
+                counter = counter + 1
 
             if self.bsctl_hash() != self.rapidrecovery_vss_hash():
-
+                print("----")
+                print("self.bsctl_hash()")
+                print("self.rapidrecovery_vss_hash()")
+                print("----")
                 """we assume, that if agent is started without configuring, module
                 should be loaded automaticaly. Here we are comparing versions
                 of the bsctl and rapidrecovery-vss"""
                 raise Exception('There is missmatch in the bsctl -v and rapidreco'
                                 'very-vss versions')
-
+            print("----")
+            print("self.bsctl_hash()")
+            print("self.rapidrecovery_vss_hash()")
+            print("----")
             self.service_activity('rapidrecovery-agent', 'restart')
             self.status_of_the_service('rapidrecovery-agent', 0)
             self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
@@ -92,7 +99,6 @@ class AgentCommands(Agent):
 
         except Exception as e:
             print(e)
-            raise Exception("EXCEPTION:: Failed some test action")
 
 
             # TODO: /etc/services needs to be updated with the port entries. Example: 8006 port on the agent startup.

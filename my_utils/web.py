@@ -13,16 +13,40 @@ from selenium.webdriver import ActionChains
 import pprint
 import urllib2
 import ssl
-
-
 from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
 import time
 import re
 import urllib
 
-
 # driver.implicitly_wait(10) # seconds
+
+work_path = os.path.abspath('.') + '/'  # Returns current directory, where script is run.
+config = work_path + "config.ini"
+
+
+
+def read_cfg():
+    cp = ConfigParser.ConfigParser()
+    cp.readfp(open(config))
+    ip_machine = cp.get('web', 'ip')
+    username_machine = cp.get('web', 'username_machine')
+    password_machine = cp.get('web', 'password_machine')
+    ip_livecd = cp.get('web', 'ip_livecd')
+    pass_livecd = cp.get('web', 'pass_livecd')
+    vbox_vmname = cp.get('web', 'vbox_livedvdname')
+    core_ip = cp.get('general', 'core_ip')
+    core_link = 'https://' + core_ip + ':8006/apprecovery/admin'
+    web_count = cp.get('web', 'web_count')
+    protect_agent = cp.get('web', 'protect_agent')
+    rollback_agent = cp.get('web', 'rollback_agent')
+    auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
+    bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
+    force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
+    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent
+
+
+ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent = read_cfg()
 
 
 class WebAgent(object):
@@ -30,9 +54,6 @@ class WebAgent(object):
     long_timeout = 200
     agent_link = None
     id_agent = None
-
-
-
 
     def __init__(self):
         self.driver = webdriver.Firefox()
@@ -50,8 +71,11 @@ class WebAgent(object):
             asd.send_keys(Keys.TAB + '123asdQ')
             asd.accept()
             print("Core UI is open")
-            time.sleep(2)
-            self.driver.refresh()
+            if self.driver.current_url is not core_link:
+                print(self.driver.current_url)
+                time.sleep(5)
+            # time.sleep(2)
+            # self.driver.refresh()
 
         except TimeoutException:
             self.driver.close()
@@ -145,13 +169,14 @@ class WebAgent(object):
 
         try:
             print("I am starting to protect agent %s, %s, %s" % (self.ip_machine, self.username, self.password))
+            print("here")
             WebDriverWait(self.driver, self.short_timeout).until(
                 EC.element_to_be_clickable(
                     (By.XPATH, ".//*[@id='protectMachine']/a[1]")))
             new = self.driver.find_element_by_xpath(
                 ".//*[@id='protectMachine']/a[1]")
             new.click()
-
+            print("here2")
             WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
@@ -206,7 +231,7 @@ class WebAgent(object):
             counter = 0
             while self.find_machine_link(self.ip_machine) is None and counter < 10:
                 print("waiting protected machine to appear")
-                time.sleep(50)
+                time.sleep(5)
                 counter = counter + 1
 
 
@@ -262,6 +287,8 @@ class WebAgent(object):
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             print("HERE5")
 
+        except Exception:
+            raise Exception
 
         finally:
             pass
@@ -357,12 +384,12 @@ class WebAgent(object):
                     print self.agent_link
                     print Exception
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")))
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")))
             remove_agent = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")
             remove_agent.click()
             time.sleep(2)
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='popup1']/div/div[6]/form/div[1]/div/div/label/span")))
-            click_remove_with_recovery_points = self.driver.find_element_by_xpath(".//*[@id='popup1']/div/div[6]/form/div[1]/div/div/label/span")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='DeleteRecoveryPoints']")))
+            click_remove_with_recovery_points = self.driver.find_element_by_xpath(".//*[@id='DeleteRecoveryPoints']")
             click_remove_with_recovery_points.click()
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnRemoveProtection']")))
@@ -939,64 +966,4 @@ class WebAgent(object):
             print("Completed")
 
 
-
-
-
-if __name__ == "__main__":
-
-    work_path = os.getcwd() + "/"  # Returns current directory, where script is run.
-    config = work_path + "config.ini"
-
-    def read_cfg():
-        cp = ConfigParser.ConfigParser()
-        cp.readfp(open(config))
-        ip_machine = cp.get('web', 'ip')
-        username_machine = cp.get('web', 'username_machine')
-        password_machine = cp.get('web', 'password_machine')
-        ip_livecd = cp.get('web', 'ip_livecd')
-        pass_livecd = cp.get('web', 'pass_livecd')
-        vbox_vmname = cp.get('web', 'vbox_livedvdname')
-        core_ip = cp.get('general', 'core_ip')
-        core_link = 'https://' + core_ip +':8006/apprecovery/admin'
-        web_count = cp.get('web', 'web_count')
-        protect_agent = cp.get('web', 'protect_agent')
-        rollback_agent = cp.get('web', 'rollback_agent')
-        auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
-        bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
-        force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-        return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent
-
-
-    ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent = read_cfg()
-    a = WebAgent()
-
-    try:
-
-        a.open_core_ui()
-        for i in range(0, int(web_count)):
-            if protect_agent is "1":
-                a.protect_new_agent(ip_machine, username_machine, password_machine)
-                a.status(ip_machine)
-            if force_snapshot_agent is "1":
-                a.force_snapshot(ip_machine, base=True)
-                a.status(ip_machine)
-                a.force_snapshot(ip_machine, base=False)
-                a.status(ip_machine)
-            if rollback_agent is "1":
-                a.rollback(ip_machine)
-                a.status(ip_machine)
-            if auto_bmr_agent is "1":
-                print("BMR!!!")
-                a.auto_bmr(ip_machine, vbox_vmname, ip_livecd, pass_livecd)
-                a.status(ip_machine)
-            if bmr_bootable_agent is "1":
-                a.bmr_bootable(ip_machine, ip_livecd, pass_livecd, vbox_vmname)
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("Completed Web Testing")
-
-    finally:
-        pass
-        a.driver.get_screenshot_as_file(filename="/tmp/ERROR_image")
-        a.remove_agent_by_id(ip_machine)
-        a.driver.close()
 

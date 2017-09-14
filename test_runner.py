@@ -1,11 +1,12 @@
 from __future__ import print_function
-import sys
+
+import ConfigParser
 import os
 import pkgutil
-import ConfigParser
+
 from my_utils.system import Executor
-from tests.install_repo import InstallRepo
-from tests.install_agent import *
+from tests import *
+
 
 class TestsStat(object):
     started = 0
@@ -84,11 +85,13 @@ class TestRunner(object):
         for key, value in self.test_list.items():
             #  if key == "InstallAgent" and int(value) == 1:
             if int(value) == 1:
-                #print(self.test_classes[key])
+                # print(self.test_classes[key])
                 result = None
                 try:
                     self.executor.log("%s test :\n" % key)
                     test = self.test_classes[key]()
+                    # print(test)
+                    # exit(1)
                     self.executor.log("Setting Up %s test .....\n" % key)
                     test.setUp()
                     #self.executor.log("Done")

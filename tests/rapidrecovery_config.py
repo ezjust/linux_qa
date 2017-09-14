@@ -28,7 +28,7 @@ class RapidrecoveryConfig(Agent):
             elif self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
 
                 if self.install_version() is "7":
-                    firewall = "systemd"
+                    firewall = "firewalld"
                 else:
                     firewall = "lokkit"
 
