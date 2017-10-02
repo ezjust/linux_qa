@@ -10,8 +10,8 @@ import time
 import subprocess
 
 log_cm = vagrant.make_file_cm('deployment.log')
-configuration_log = open('configuration.log', mode='a+')
-installation_agent_log = open('installation_agent.log', mode='a+')
+configuration_log = open('configuration.log', 'a+')
+installation_agent_log = open('installation_agent.log', 'a')
 work_path = os.getcwd() + "/" #Returns current directory, where script is run.
 box_work_path = "/home/vagrant"
 tar_name = "linux_qa.tar"
@@ -25,6 +25,7 @@ class VagrantAutomation(object):
     __logDir = 'Logs'
     box_log = '/box.log'
     box_log_object = None
+    env.password = "vagrant"
 
 
     def write_cfg(self, ipaddr, **kwargs):
@@ -52,6 +53,7 @@ class VagrantAutomation(object):
         self.reload_vm = self.cp.getboolean('vagrant', 'reload_vm')
         self.run_web = self.cp.getboolean('general', 'run_web')
         self.run_test = self.cp.getboolean('general', 'run_test')
+        self.run_configurator = self.cp.getboolean('general', 'run_configurator')
         # print(self.os_list)
 
     def create_tar(self, work_path):
@@ -117,7 +119,8 @@ class VagrantAutomation(object):
                         sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
                     else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                 elif box_distro_name in ('sles', 'suse'):
-                    sudo('zyppre update -y', stdout=configuration_log)
+                    sudo('zypper rr 2', stdout=configuration_log, shell=False)
+                    sudo('zypper -n update -y', stdout=configuration_log)
                     sudo('zypper install -y ', + self.sles_packages, stdout=configuration_log)
 
 
@@ -151,10 +154,11 @@ class VagrantAutomation(object):
                     run("sudo /usr/bin/python2.7 test_main.py")
 
                 if self.run_web:
-                    sudo('wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
-                    sudo('chmod +x ./configurator.sh')
-                    sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
-                    run('lsblk')
+                    if self.run_configurator:
+                        sudo('wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
+                        sudo('chmod +x ./configurator.sh')
+                        sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
+                        run('lsblk')
                     sudo(
                         'wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
                     sudo('chmod +x ./agent_install.sh')
@@ -164,7 +168,7 @@ class VagrantAutomation(object):
                         "ifconfig | grep 10.10. | awk '{print $2}' | sed 's/.*://'")
 
                     self.write_cfg(ipaddr=ipaddr)
-                    os.system("/usr/bin/python2.7 web.py")
+                    os.system("sudo /usr/bin/python2.7 web_runner.py")
 
                 print("Testing is completed")
 
@@ -191,6 +195,10 @@ class VagrantAutomation(object):
     def clean_installation_agent_log(self):
         if os.path.isfile("installation_agent.log"):
             os.remove("installation_agent.log")
+
+    def clean_configuration_log(self):
+        if os.path.isfile("configuration.log"):
+            os.remove("configuration.log")
 
     def write_in_box_log(self, message):
         self.message = message
@@ -222,7 +230,10 @@ if __name__ == '__main__':
     start.read_cfg()
     start.clean_box_log()
     start.clean_installation_agent_log()
+    start.clean_configuration_log()
+
     start.open_box_log()
+
     for vm in start.os_list:
         print(vm + " : executing....")
         start.write_in_box_log(vm + " tests are comleted:" + '\n')

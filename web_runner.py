@@ -81,21 +81,21 @@ class TestRunner(object):
         self.setup()
         self.read_cfg()
         print("----------------------")
-        print("test_list.items()")
-        print(self.test_list.items())
-        print("test_classes.items()")
-        print(self.test_classes.items())
-        print("test_modules.items()")
-        print(self.test_modules.items())
+        # print("test_list.items()")
+        # print(self.test_list.items())
+        # print("test_classes.items()")
+        # print(self.test_classes.items())
+        # print("test_modules.items()")
+        # print(self.test_modules.items())
         print("----------------------")
         for key, value in self.test_list.items():
             #  if key == "InstallAgent" and int(value) == 1:
             if int(value) == 1:
-                print(key)
+                # print(key)
                 key_word = key
                 for key, value in self.test_modules.items():
                     if value == key_word:
-                        print(key)
+                        # print(key)
                         key_modules = key
                         for key, value in self.test_classes.items():
                             if key == key_modules:
@@ -120,13 +120,13 @@ class TestRunner(object):
                                 finally:
                                     self.executor.log("Cleaning Up %s test ....\n" % key)
                                     test.tearDown()
-                                print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
-                                print("================================================================="
+                                    print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
+                                    print("================================================================="
                                                   "\n"
                                                   "\n"
-                                "=================================================================")
+                                          "=================================================================")
 
-                            self.executor.log("\vTests are finished. %d are OK, %d are FAILED\n" % (stat_loops.passed, stat_loops.failed))
+        self.executor.log("\vTests are finished. %d are OK, %d are FAILED\n" % (stat_loops.passed, stat_loops.failed))
         #         print(self.test_list.values())
         #         print(self.test_classes.get([key]))
         #         result = None

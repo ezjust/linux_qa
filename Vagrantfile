@@ -10,6 +10,7 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 2
+    v.gui = false
     unless File.exist?(lfs_disk1)
         v.customize ['createhd', '--filename', lfs_disk1, '--size', 10 * 1024]
     end
@@ -40,12 +41,14 @@ Vagrant.configure("2") do |config|
     centos7.ssh.password = "vagrant"
   end
   config.vm.define "sles_12_x64" do |sles12|
-    sles12.vm.box = "/var/lib/our_data/boxes/sles_12_x64.box"
+    sles12.vm.box = "/home/mbugaiov/Documents/boxes/sles_12_x64.box"
+    sles12.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sles12.ssh.username = "vagrant"
     sles12.ssh.password = "vagrant"
   end
   config.vm.define "sles_11_x64" do |sles11|
-    sles11.vm.box = "/var/lib/our_data/boxes/sles_11_x64.box"
+    sles11.vm.box = "/home/mbugaiov/Documents/boxes/sles_12_x64.box"
+    sles11.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sles11.ssh.username = "vagrant"
     sles11.ssh.password = "vagrant"
   end
