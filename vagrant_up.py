@@ -54,6 +54,8 @@ class VagrantAutomation(object):
         self.run_web = self.cp.getboolean('general', 'run_web')
         self.run_test = self.cp.getboolean('general', 'run_test')
         self.run_configurator = self.cp.getboolean('general', 'run_configurator')
+        self.install_agent = self.cp.getboolean('general', 'install_agent')
+        self.vagrant_up = self.cp.getboolean('general', 'vagrant_up')
         # print(self.os_list)
 
     def create_tar(self, work_path):
@@ -81,55 +83,56 @@ class VagrantAutomation(object):
         """Starts the specified machine using vagrant"""
         self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
-        try:
-            v.up(vm_name=self.box_distro_name)
-        except Exception:
-            time.sleep(60)
-            v.up(vm_name=self.box_distro_name)
-
-        with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
-            print("Test")
+        if self.vagrant_up:
             try:
-                box_distro = self.box_distro_name.split('_')
-                box_distro_name = box_distro[0]
-                #v.up(vm_name=self.box_distro_name)
+                v.up(vm_name=self.box_distro_name)
+            except Exception:
+                time.sleep(60)
+                v.up(vm_name=self.box_distro_name)
 
-                print("Install environment is in progress...")
-                if box_distro_name in ('ubuntu', 'debian'):
-                    clean = "echo `ps -A | grep apt | awk '{print $1}'`"
-                    result_clean = run(clean)
-                    # print(result_clean)
-                    # print(len(result_clean))
-                    if len(result_clean) is not 0:
-                        sudo(stderr=False, command='kill -9 ' + result_clean)
-                    sudo('apt-get update', stdout=configuration_log)
-                    sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
-                elif box_distro_name in ('rhel', 'centos'):
-                    # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
-                    # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
+            with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
+                print("Test")
+                try:
+                    box_distro = self.box_distro_name.split('_')
+                    box_distro_name = box_distro[0]
+                    #v.up(vm_name=self.box_distro_name)
+
+                    print("Install environment is in progress...")
+                    if box_distro_name in ('ubuntu', 'debian'):
+                        clean = "echo `ps -A | grep apt | awk '{print $1}'`"
+                        result_clean = run(clean)
+                        # print(result_clean)
+                        # print(len(result_clean))
+                        if len(result_clean) is not 0:
+                            sudo(stderr=False, command='kill -9 ' + result_clean)
+                        sudo('apt-get update', stdout=configuration_log)
+                        sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+                    elif box_distro_name in ('rhel', 'centos'):
+                        # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
+                        # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
+                        pass
+                        sudo('yum update -y', stdout=configuration_log)
+                        sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                        sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
+                        sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                        sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
+                        sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
+                        sudo('pip install --upgrade pip', stdout=configuration_log)
+                        if box_distro[1] in ('6'):
+                            sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
+                        else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
+                    elif box_distro_name in ('sles', 'suse'):
+                        sudo('zypper rr 2', stdout=configuration_log, shell=False)
+                        sudo('zypper -n update -y', stdout=configuration_log)
+                        sudo('zypper install -y ', + self.sles_packages, stdout=configuration_log)
+
+
+                    sudo('uname -r')
+
+                except Exception as e:
+                    print("Exceptions has been received. Skipped, proceeding for the next OS.")
+                    print(e)
                     pass
-                    sudo('yum update -y', stdout=configuration_log)
-                    sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                    sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
-                    sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                    sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
-                    sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
-                    sudo('pip install --upgrade pip', stdout=configuration_log)
-                    if box_distro[1] in ('6'):
-                        sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
-                    else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
-                elif box_distro_name in ('sles', 'suse'):
-                    sudo('zypper rr 2', stdout=configuration_log, shell=False)
-                    sudo('zypper -n update -y', stdout=configuration_log)
-                    sudo('zypper install -y ', + self.sles_packages, stdout=configuration_log)
-
-
-                sudo('uname -r')
-
-            except Exception as e:
-                print("Exceptions has been received. Skipped, proceeding for the next OS.")
-                print(e)
-                pass
 
 
             if self.reload_vm:
@@ -159,15 +162,15 @@ class VagrantAutomation(object):
                         sudo('chmod +x ./configurator.sh')
                         sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
                         run('lsblk')
-                    sudo(
+                    if self.install_agent:
+                        sudo(
                         'wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
-                    sudo('chmod +x ./agent_install.sh')
-                    sudo('./agent_install.sh --install ' + self.build_agent,
+                        sudo('chmod +x ./agent_install.sh')
+                        sudo('./agent_install.sh --install ' + self.build_agent,
                          stdout=installation_agent_log)
-                    ipaddr = sudo(
+                        ipaddr = sudo(
                         "ifconfig | grep 10.10. | awk '{print $2}' | sed 's/.*://'")
-
-                    self.write_cfg(ipaddr=ipaddr)
+                        self.write_cfg(ipaddr=ipaddr)
                     os.system("sudo /usr/bin/python2.7 web_runner.py")
 
                 print("Testing is completed")

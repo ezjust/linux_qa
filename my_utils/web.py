@@ -234,6 +234,9 @@ class WebAgent(object):
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             finish = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             finish.click()
+
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
+
             print("The agent %s with the credentials: %s and %s is protected" % (self.ip_machine, self.username, self.password))
 
             counter = 0
@@ -245,14 +248,22 @@ class WebAgent(object):
 
             try:
                 self.driver.get(str(self.agent_link))
+                time.sleep(2)
             except TimeoutException:
                 time.sleep(10)
                 print(self.driver.current_url)
                 print(self.agent_link)
             finally:
                 if self.driver.current_url != self.agent_link:
-                    print("They are differ")
-                    raise Exception
+                    x = 0
+                    self.driver.get(str(self.agent_link))
+                    while self.driver.current_url != self.agent_link and x < 12:
+                        x = x + 1
+                        time.sleep(10)
+                        print('waiting agent link to appear')
+                    if self.driver.current_url != self.agent_link:
+                        print("They are differ")
+                        raise Exception
 
             print("Machine is protected. New transfer will be started")
 
@@ -293,7 +304,7 @@ class WebAgent(object):
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            # print("HERE5")
+            print("HERE5")
 
         except Exception:
             raise Exception
@@ -446,6 +457,7 @@ class WebAgent(object):
                     test = elem.get_attribute('href')
                     if elem.text in self.ip:
                         agent_link = test
+
                         # id = re.split('Machines/*', agent_link)[1]
                         # print("AGENT LINK", agent_link)
 
@@ -462,39 +474,51 @@ class WebAgent(object):
         if self.driver.current_url != str(agent_link + "/Events"):
             time.sleep(5)
 
-        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "taskGrid")))
-
+        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "cancelJobs")))
+        # WebDriverWait(self.driver, 5).until(
+        #     EC.invisibility_of_element_located((By.ID, "cancelJobs")))
+        # element = self.driver.find_element_by_id('cancelJobs')
+        #
+        # while element.is_enabled() is True:
+        #     print("Element is active")
+        #     print(element.is_enabled())
+        #     print(element.is_displayed())
+        #     print(element.is_selected())
+        time.sleep(1)
+        #print('Gather list of events')
         html = self.driver.page_source
         soup = BeautifulSoup(html, "html.parser")
-        # print(
-        # "--------------------------------------------------------------------------")
+        #print(
+        #"--------------------------------------------------------------------------")
         substring = soup.find_all("tr", {"id": True})
         text = re.findall('id=".*?"', str(substring))
         list_id = []
-        # print("asdasdasdasd")
-        # print(list_id)
-        # print("asdasdasdasd")
+        #print("asdasdasdasd")
+        #print(list_id)
+        #print("asdasdasdasd")
         for i in range(0, len(text) - 1):
             if len(text[i]) == int(41):
                 if text[i][4:40] not in list_id:
                     list_id.append(text[i][4:40])
 
-        # print(list_id)
-        # print(
-        # "--------------------------------------------------------------------------")
-        # print(list_id[0])
+        #print(list_id)
+        #print(
+        #"--------------------------------------------------------------------------")
+        #print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz')
+        #print(list_id[0])
         substring = soup.find_all("tr", {"id": list_id[0]})
-        # print(substring)
+        #print(substring)
+        #print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzsd')
         value = re.findall('value=".*?"', str(substring))
         value = value[2].split(" ", 1)
         value = value[0].split('value="', 1)[1]
-        # print(value)
+        #print(value)
         title = re.findall('title=".*?"', str(substring))
         title = title[0].split('"', 1)
         title = title[1][0:(len(title[1]) - 1)]
         if len(title) > 20:
             title = "In Progress"
-        # print(title)
+        #print(title)
 
         stat = {}
 
@@ -506,9 +530,9 @@ class WebAgent(object):
 
         for i in range(0, len(list_id)):
             substring = soup.find_all("tr", {"id": list_id[i]})
-            # print(list_id[i])
+            #print(list_id[i])
             value = re.findall('value=".*?"', str(substring))
-            # print(value)
+            #print(value)
             value = value[2].split(" ", 1)
             value = value[0].split('value="', 1)[1]
 
@@ -517,22 +541,22 @@ class WebAgent(object):
                 value = value[1].split(" ", 1)
                 value = value[0].split('value="', 1)[1]
 
-            # print(value)
+            #print(value)
             title = re.findall('title=".*?"', str(substring))
             title = title[0].split('"', 1)
             title = title[1][0:(len(title[1]) - 1)]
             if len(title) > 20:
-                # print("I am here")
+                #print("I am here")
                 if " of " in title:
-                    # print("Gottcha")
+                    #print("Gottcha")
                     title = "In Progress"
-            # print(title)
+            #print(title)
             instert(id=list_id[i], value=value, result=title, dict=stat)
 
-        # print(stat)
+        #print(stat)
         # pp = pprint.PrettyPrinter(indent=4)
         # pp.pprint(stat)
-
+        #print("list_events_completed")
         return stat
 
     def core_events(self, ip_machine):
@@ -640,17 +664,14 @@ class WebAgent(object):
         active_event = None
 
         a = self.list_events(ip_machine)
-        # print(a)
+        print(a)
         b = "661ee30c-72c5-402e-8472-5589a6e66943"
         # print(a.get(b)[0])
 
-        # print("Here")
-
-
         while self.last_job_attr == self.list_events(ip_machine):
-            # print("Equal")
+            print("Equal")
             time.sleep(3)
-        # print("New event received")
+        print("New event received")
         test = self.list_events(ip_machine)
         for item in test:
             if item not in self.last_job_attr:
@@ -658,7 +679,7 @@ class WebAgent(object):
                     active_event = item
                     event_status = test.get(item)[1] # return status of the event
                     event_name = test.get(item)[0] # return name of the event
-                    # print(event_status)
+                    print(event_status)
                     time.sleep(0.1)
                     test = self.list_events(ip_machine)
 
