@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 import time
 import re
 import urllib
+import datetime
 
 # driver.implicitly_wait(10) # seconds
 
@@ -35,6 +36,7 @@ def read_cfg():
     ip_livecd = cp.get('web', 'ip_livecd')
     pass_livecd = cp.get('web', 'pass_livecd')
     vbox_vmname = cp.get('web', 'vbox_livedvdname')
+    vbox_export_vmname = cp.get('web', 'vbox_export_vmname')
     core_ip = cp.get('general', 'core_ip')
     core_link = 'https://' + core_ip + ':8006/apprecovery/admin'
     web_count = cp.get('web', 'web_count')
@@ -44,10 +46,10 @@ def read_cfg():
     auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
     bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
     force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent
+    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname
 
 
-ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname = read_cfg()
 
 
 class WebAgent(object):
@@ -169,6 +171,7 @@ class WebAgent(object):
 
 
         try:
+            print(datetime.datetime.now().time())
             print("I am starting to protect agent %s, %s, %s" % (self.ip_machine, self.username, self.password))
             # print("here")
             if build_agent == '7.1.0':
@@ -184,7 +187,7 @@ class WebAgent(object):
                 new = self.driver.find_element_by_xpath(
                     ".//*[@id='protectMachine']/div[1]")
             new.click()
-            #print("here2")
+            print("here2")
             WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
@@ -204,8 +207,9 @@ class WebAgent(object):
 
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
-
+            print(datetime.datetime.now().time())
             self.wait_for_element_invisible(element_id="lpLoadingContent")
+            print(datetime.datetime.now().time())
 
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='btnWizardDefault']"))) # this part should be rechecked. Since, there is bug.
 
@@ -221,26 +225,63 @@ class WebAgent(object):
                     print(upgrade.text)
                     next_button = self.driver.find_element_by_id("btnWizardDefault")
                     next_button.click()
+            print(datetime.datetime.now().time())
 
             time.sleep(2)
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardBack")))
             back = self.driver.find_element_by_xpath(".//*[@id='btnWizardBack']")
             back.click()
+            print(datetime.datetime.now().time())
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
+            print(datetime.datetime.now().time())
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
-            finish = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
-            finish.click()
+            print("Before")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.CLASS_NAME, "control-label")))
+            check = self.driver.find_element_by_class_name('control-label')
+            if check.text is not None:
+                counter = 0
+                try:
+                    text = check.text
+                    while "Display name:" not in text and counter < 10:
+                        print("--------------------------------")
+                        counter = counter + 1
+                        print("Waiting for Display name:")
+                        print(text)
+                        time.sleep(5)
+                        WebDriverWait(self.driver, self.short_timeout).until(
+                            EC.visibility_of_element_located(
+                                (By.CLASS_NAME, "control-label")))
+                        check = self.driver.find_element_by_class_name(
+                            'control-label')
+                        text = check.text
+                        print("===============================")
+
+
+                    print("checktest is: ")
+                    print(check.text)
+
+                    if "Display name:" in check.text:
+                        WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
+                        finish = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
+                        finish.click()
+                        print(datetime.datetime.now().time())
+                        print("After")
+                    else:
+                        raise Exception("TIMEOUT IN THE PROTECTION WIZARD")
+
+                finally:
+                    pass
 
             self.wait_for_element_invisible(element_id="lpLoadingContent")
+            print(datetime.datetime.now().time())
 
             print("The agent %s with the credentials: %s and %s is protected" % (self.ip_machine, self.username, self.password))
 
             counter = 0
-            while self.find_machine_link(self.ip_machine) is None and counter < 10:
+            while self.find_machine_link(self.ip_machine) is None and counter < 20:
                 print("waiting protected machine to appear")
                 time.sleep(5)
                 counter = counter + 1
@@ -264,10 +305,13 @@ class WebAgent(object):
                     if self.driver.current_url != self.agent_link:
                         print("They are differ")
                         raise Exception
+            print(datetime.datetime.now().time())
 
             print("Machine is protected. New transfer will be started")
+            print(datetime.datetime.now().time())
 
             self.find_last_job_id()
+            print(datetime.datetime.now().time())
 
             if self.driver.current_url != self.agent_link:
                 self.driver.get(str(self.agent_link))
@@ -304,10 +348,13 @@ class WebAgent(object):
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            print("HERE5")
+            #print("HERE5")
 
         except Exception:
+            print("HERE")
+            print Exception
             raise Exception
+
 
         finally:
             pass
@@ -387,7 +434,6 @@ class WebAgent(object):
                 print("I got 'None' for the agent_link, 'timeout in 60 sec' is applied.")
                 counter = counter + 1
                 if counter == 12 :
-                    self.driver.close()
                     not_protected = True
                     print("There was not found machine for remove.")
                     return
@@ -484,17 +530,17 @@ class WebAgent(object):
         #     print(element.is_enabled())
         #     print(element.is_displayed())
         #     print(element.is_selected())
-        time.sleep(1)
-        #print('Gather list of events')
+        time.sleep(2)
+        print('Gather list of events')
         html = self.driver.page_source
         soup = BeautifulSoup(html, "html.parser")
-        #print(
-        #"--------------------------------------------------------------------------")
+        print(
+        "--------------------------------------------------------------------------")
         substring = soup.find_all("tr", {"id": True})
         text = re.findall('id=".*?"', str(substring))
         list_id = []
         #print("asdasdasdasd")
-        #print(list_id)
+        print(list_id)
         #print("asdasdasdasd")
         for i in range(0, len(text) - 1):
             if len(text[i]) == int(41):
@@ -554,8 +600,8 @@ class WebAgent(object):
             instert(id=list_id[i], value=value, result=title, dict=stat)
 
         #print(stat)
-        # pp = pprint.PrettyPrinter(indent=4)
-        # pp.pprint(stat)
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(stat)
         #print("list_events_completed")
         return stat
 
@@ -664,14 +710,14 @@ class WebAgent(object):
         active_event = None
 
         a = self.list_events(ip_machine)
-        print(a)
+        #print(a)
         b = "661ee30c-72c5-402e-8472-5589a6e66943"
         # print(a.get(b)[0])
 
         while self.last_job_attr == self.list_events(ip_machine):
             print("Equal")
             time.sleep(3)
-        print("New event received")
+        #print("New event received")
         test = self.list_events(ip_machine)
         for item in test:
             if item not in self.last_job_attr:
@@ -679,7 +725,7 @@ class WebAgent(object):
                     active_event = item
                     event_status = test.get(item)[1] # return status of the event
                     event_name = test.get(item)[0] # return name of the event
-                    print(event_status)
+                    #print(event_status)
                     time.sleep(0.1)
                     test = self.list_events(ip_machine)
 
@@ -752,7 +798,7 @@ class WebAgent(object):
                     active_event = item
                     event_status = test.get(item)[1] # return status of the event
                     event_name = test.get(item)[0] # return name of the event
-                    print(event_status)
+                    #print(event_status)
                     time.sleep(0.1)
                     print('2')
                     test = self.core_events(ip_machine)
@@ -912,7 +958,7 @@ class WebAgent(object):
         print status
 
         if status in ['powered', 'saved']:
-            print "Truesss"
+            #print "Truesss"
             if "powered" in status:
                 self.execute(cmd=boot_vm_dvd)
                 time.sleep(10)
@@ -968,7 +1014,7 @@ class WebAgent(object):
 
         restore_button.click()
 
-        print("Restore button has been clicked.")
+        #print("Restore button has been clicked.")
 
         self.wait_for_element_invisible("lpLoadingContent")
         WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "recoverUsingBootCD")))
@@ -994,9 +1040,9 @@ class WebAgent(object):
         popup_header = self.driver.find_element_by_id("msgbox-message-header")
         popup = self.driver.find_element_by_id("msgbox-message")
 
-        print(popup.is_enabled())
+        #print(popup.is_enabled())
         # print(popup)
-        print(popup.text)
+        #print(popup.text)
 
         '''Popup.text may have empty string.'''
         if "Dynamic disks will be converted into basic during restoration" in popup.text:
@@ -1040,12 +1086,213 @@ class WebAgent(object):
         self.wait_for_element_invisible(element_id="lpLoadingContent")
         popup = self.driver.find_element_by_id("msgbox-message")
         # print(popup)
-        print(popup.text)
+        #print(popup.text)
         if "The type of source BIOS" in popup.text:
             print("I am in popup.text")
             self.driver.find_element_by_id("1").click()
         time.sleep(5)
         print('BMR is started.......')
+
+
+    def export_vbox(self, ip_machine, vbox_export_vmname, ip_livecd, pass_livecd):
+        '''In this function we get id of the job from the events of the 
+                    dedicated agent and gets the original job id we can use in future.
+                    Without this function we cannot proceed in the get resolution
+                    status of the job.'''
+        self.ip = ip_machine
+        self.vmname = vbox_export_vmname
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
+        agent_link = "https://10.10.61.30:8006/apprecovery/admin/ProtectedMachines/482a0a91-b82d-494f-ac6a-ebc542435cdc"
+        self.find_machine_link(self.ip)
+        self.find_last_job_id()
+
+        status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+        boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+        restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+        poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+
+
+        # print("Working here")
+        #
+        # status = self.execute(cmd=status_vm)[0][0]
+        #
+        # status = status.split()[0]
+        #
+        # print status
+        #
+        # if status in ['powered', 'saved']:
+        #     print "Truesss"
+        #     if "powered" in status:
+        #         self.execute(cmd=boot_vm_dvd)
+        #         time.sleep(10)
+        #         print("LiveDVD machine is configured to boot from LiveDVD")
+        #
+        #         self.execute(cmd=restore_snap)
+        #         print("Snapshot restored")
+        #         time.sleep(5)
+        #
+        #     self.execute(cmd=start_vm)
+        #     print("LiveDVD machine booting from the dvd")
+
+        self.find_last_job_id()
+        self.driver.get(str(self.agent_link + "/RecoveryPoints"))
+        time.sleep(7)
+
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.text_to_be_present_in_element(
+                (By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span"),
+                "Recovery Points"))
+        html = self.driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        #substring = soup.find_all('button', {"class": "btn dropdown-toggle"}) '''worked in 7.0.0 and not working in 6.1.3'''
+        substring = soup.find_all('button', {"type": "button"})
+        # print substring
+        status = re.split('type=*', str(substring))
+        status = re.split('"', str(status[0]))
+        # print(status)
+        select = self.driver.find_element_by_xpath(
+            ".//*[@id='" + status[5] + "']")
+        select.click()
+
+        time.sleep(1)
+
+        # dm = self.driver.find_elements_by_class_name("dropdown-menu")
+        # for elem in dm:
+        #     if elem.text is not u'':
+        #         elem.find_element_by_link_text("Restore").click()
+        # time.sleep(7)
+
+        export_button = None
+        dm = self.driver.find_elements_by_class_name("dropdown-menu")
+        for elem in dm:
+            if elem.text is not u'':
+                export_button = elem.find_element_by_link_text("Export")
+                while export_button == None:
+                    dm = self.driver.find_elements_by_class_name(
+                        "dropdown-menu")
+                    for elem in dm:
+                        if elem.text is not u'':
+                            export_button = elem.find_element_by_link_text(
+                                "Export")
+
+        export_button.click()
+
+        print("Export button has been clicked.")
+
+        self.wait_for_element_invisible("lpLoadingContent")
+        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "wizardContentContainer")))
+
+        vbox_button = None
+        WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.CLASS_NAME, "controls")))
+
+        html = self.driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        # substring = soup.find_all('button', {"class": "btn dropdown-toggle"}) '''worked in 7.0.0 and not working in 6.1.3'''
+        substring = soup.find_all('select', {"class": "form-control ui-widget ui-adropdown"})
+        # print substring
+
+        # click = self.driver.find_element_by_id('recoverToVirtualMachine')
+        # click.click()
+
+        select = Select(self.driver.find_element_by_id('recoverToVirtualMachine'))
+        # print select.options
+        for o in select.options:
+            # print o.text
+            if 'VirtualBox' in o.text:
+                # print "Yes"
+                # print o
+                o.click()
+                self.driver.find_element_by_id("btnWizardDefault").click()
+                WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "useRemoteLinuxMachine")))
+                self.driver.find_element_by_id('useRemoteLinuxMachine').click()
+                self.driver.find_element_by_id('vBoxHostName').send_keys('10.10.60.193')
+                self.driver.find_element_by_id('virtualMachineName').send_keys(Keys.LEFT_CONTROL, 'a')
+                self.driver.find_element_by_id('virtualMachineName').send_keys(self.vmname)
+                self.driver.find_element_by_id('vBoxTargetPath').send_keys('/home/mbugaiov/Music')
+                self.driver.find_element_by_id('vBoxUsername').send_keys('root')
+                self.driver.find_element_by_id('vBoxPassword').send_keys('111111')
+                self.driver.find_element_by_id("btnWizardDefault").click()
+                #new page Volumes
+                WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "exportVolumeMappingGrid_selectAll_triSpan")))
+                self.driver.find_element_by_id('exportVolumeMappingGrid_selectAll_triSpan').click()
+                self.driver.find_element_by_id("btnWizardDefault").click()
+                #new_page Warnings
+
+                self.wait_for_element_invisible("lpLoadingContent")
+                WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "btnWizardDefault")))
+                self.driver.find_element_by_id("btnWizardDefault").click()
+                break
+
+
+
+        print('VBOX export is started.......')
+
+    def export_vbox_bootable(self, ip_machine, vbox_export_vmname):
+
+        self.vmname = vbox_export_vmname
+        self.ip = ip_machine
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
+        self.bootability = None
+
+
+        # poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+        # start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+        # boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+        # boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
+        # restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+        # status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        # clean_dvd = "sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive"
+        # check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
+        try:
+
+            find_ip_exported_vm = "vboxmanage guestproperty enumerate " + self.vmname + " | grep 'IP' | awk '{print $4}' | cut -f1 -d ','"
+
+            start_exported_vm = "vboxmanage startvm " + self.vmname
+
+            modify_exported_vm = "vboxmanage modifyvm " + self.vmname + " --nic2 bridged --bridgeadapter2 enp3s0 --nictype2 82540EM --macaddress2 080027C4C399 --cableconnected2 on"
+
+            self.execute(cmd=modify_exported_vm)
+            self.execute(cmd=start_exported_vm)
+            ip = self.execute(cmd=find_ip_exported_vm)[0][0]
+            counter = 0
+            while not ip and counter < 20:
+                time.sleep(5)
+                counter = counter + 1
+                ip = self.execute(cmd=find_ip_exported_vm)[0][0]
+
+            test_connection = "ping -c 1 " + ip
+
+            if ip:
+                # print self.error_code_unix_command(cmd=test_connection)
+                # print "=============="
+                if self.error_code_unix_command(cmd=test_connection) is not 0:
+                    print "The IP is: %s" % ip
+                    print "The error code is: %s" % self.error_code_unix_command(cmd=test_connection)
+                    raise Exception("The ping to the exported machine is not etablished, assume something is wrong with the export")
+            else:
+                print "The IP is: %s" % ip
+                print "The error code is: %s" % self.error_code_unix_command(
+                    cmd=test_connection)
+                raise Exception("The IP for the exported machine is not received yet. Please investigate")
+            print "COMPLETED EXPORT BOOTABLE"
+        # except:
+        #     pass
+
+        finally:
+            poweroff_exported_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+            unregister_exported_vm = "vboxmanage unregistervm " + self.vmname + " --delete"
+            remove_exported_from_disk = "sudo rm -rf /home/mbugaiov/Music/" + self.vmname
+            self.execute(cmd=poweroff_exported_vm)
+            time.sleep(10)
+
+            self.execute(cmd=unregister_exported_vm)
+            time.sleep(5)
+
+            self.execute(cmd=remove_exported_from_disk)
+            print("Competed cleanup")
 
     def error_code_unix_command(self, cmd=None):
         # type: (object) -> object

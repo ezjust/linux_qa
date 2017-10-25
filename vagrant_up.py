@@ -91,7 +91,6 @@ class VagrantAutomation(object):
                 v.up(vm_name=self.box_distro_name)
 
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
-                print("Test")
                 try:
                     box_distro = self.box_distro_name.split('_')
                     box_distro_name = box_distro[0]

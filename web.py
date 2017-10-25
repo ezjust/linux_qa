@@ -964,7 +964,7 @@ if __name__ == "__main__":
         auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
         bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
         force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-        return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent
+        return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname
 
 
     ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent = read_cfg()
