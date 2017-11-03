@@ -65,6 +65,7 @@ class WebAgent(object):
         self.driver.accept_untrusted_certs = True
         self.driver.assume_untrusted_cert_issuer = True
         self.driver.get(core_link)
+        #self.driver.refresh()
 
     def open_core_ui(self):
         try:
@@ -217,39 +218,40 @@ class WebAgent(object):
             #     EC.presence_of_element_located((By.XPATH, ".//*[@id='wizardContentContainer']/div[2]/div[2]/div/div[1]/div/label/span/text()")))
             upgrade = self.driver.find_element_by_id("wizardContentContainer")
             if upgrade is not None:
+                #print upgrade.text
                 if "The target machine is running an older version of the Quest Rapid Recovery Agent software" in upgrade.text:
                     click_upgrade = self.driver.find_element_by_id("upgradeAgent")
                     click_upgrade.click()
 
                     print("I was in upgrade section and considered that machine is suitable for upgrade")
-                    print(upgrade.text)
+                    #print(upgrade.text)
                     next_button = self.driver.find_element_by_id("btnWizardDefault")
                     next_button.click()
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
             time.sleep(2)
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardBack")))
             back = self.driver.find_element_by_xpath(".//*[@id='btnWizardBack']")
             back.click()
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
-            print("Before")
+            #print("Before")
             WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.CLASS_NAME, "control-label")))
             check = self.driver.find_element_by_class_name('control-label')
             if check.text is not None:
                 counter = 0
                 try:
                     text = check.text
-                    while "Display name:" not in text and counter < 10:
-                        print("--------------------------------")
+                    while "Display name:" not in text and counter < 60:
+                        #print("--------------------------------")
                         counter = counter + 1
-                        print("Waiting for Display name:")
-                        print(text)
+                        #print("Waiting for Display name:")
+                       # print(text)
                         time.sleep(5)
                         WebDriverWait(self.driver, self.short_timeout).until(
                             EC.visibility_of_element_located(
@@ -257,18 +259,18 @@ class WebAgent(object):
                         check = self.driver.find_element_by_class_name(
                             'control-label')
                         text = check.text
-                        print("===============================")
+                        #print("===============================")
 
 
-                    print("checktest is: ")
-                    print(check.text)
+                    #print("checktest is: ")
+                    #print(check.text)
 
                     if "Display name:" in check.text:
                         WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
                         finish = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
                         finish.click()
-                        print(datetime.datetime.now().time())
-                        print("After")
+                        #print(datetime.datetime.now().time())
+                        #print("After")
                     else:
                         raise Exception("TIMEOUT IN THE PROTECTION WIZARD")
 
@@ -276,17 +278,17 @@ class WebAgent(object):
                     pass
 
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
             print("The agent %s with the credentials: %s and %s is protected" % (self.ip_machine, self.username, self.password))
 
             counter = 0
-            while self.find_machine_link(self.ip_machine) is None and counter < 20:
+            while self.find_machine_link(self.ip_machine) is None and counter < 60:
                 print("waiting protected machine to appear")
                 time.sleep(5)
                 counter = counter + 1
 
-
+            #print("asd")
             try:
                 self.driver.get(str(self.agent_link))
                 time.sleep(2)
@@ -305,13 +307,14 @@ class WebAgent(object):
                     if self.driver.current_url != self.agent_link:
                         print("They are differ")
                         raise Exception
-            print(datetime.datetime.now().time())
+
+            #print(datetime.datetime.now().time())
 
             print("Machine is protected. New transfer will be started")
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
             self.find_last_job_id()
-            print(datetime.datetime.now().time())
+            #print(datetime.datetime.now().time())
 
             if self.driver.current_url != self.agent_link:
                 self.driver.get(str(self.agent_link))
@@ -328,30 +331,30 @@ class WebAgent(object):
             every = self.driver.find_element_by_xpath(".//*[@id='weekdaysPeriod']")
             every.send_keys(Keys.LEFT_CONTROL, "a")
             every.send_keys(Keys.DELETE)
-            every.send_keys("20")
+            every.send_keys("40")
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
             apply.click()
 
             print("Schedule is configured")
-            # print("HERE1")
+            #print("HERE1")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
             force_snapshot.click()
-            # print("HERE2")
+            #print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            # print("HERE3")
+            #print("HERE3")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
             first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
             first_force.click()
-            # print("HERE4")
+            #print("HERE4")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             #print("HERE5")
 
         except Exception:
-            print("HERE")
+            #print("HERE")
             print Exception
             raise Exception
 
@@ -531,16 +534,16 @@ class WebAgent(object):
         #     print(element.is_displayed())
         #     print(element.is_selected())
         time.sleep(2)
-        print('Gather list of events')
+        #print('Gather list of events')
         html = self.driver.page_source
         soup = BeautifulSoup(html, "html.parser")
-        print(
-        "--------------------------------------------------------------------------")
+        #print(
+        #"--------------------------------------------------------------------------")
         substring = soup.find_all("tr", {"id": True})
         text = re.findall('id=".*?"', str(substring))
         list_id = []
         #print("asdasdasdasd")
-        print(list_id)
+        #print(list_id)
         #print("asdasdasdasd")
         for i in range(0, len(text) - 1):
             if len(text[i]) == int(41):
@@ -600,8 +603,8 @@ class WebAgent(object):
             instert(id=list_id[i], value=value, result=title, dict=stat)
 
         #print(stat)
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(stat)
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(stat)
         #print("list_events_completed")
         return stat
 
@@ -957,8 +960,13 @@ class WebAgent(object):
 
         print status
 
-        if status in ['powered', 'saved']:
-            #print "Truesss"
+        if status in ['powered', 'saved', 'aborted']:
+            # Sometimes machine appears to be aborted. To avoid this,
+            # we use restore to the snapshot.
+            if "aborted" in status:
+                self.execute(cmd=restore_snap)
+                print("Snapshot restored")
+                time.sleep(5)
             if "powered" in status:
                 self.execute(cmd=boot_vm_dvd)
                 time.sleep(10)
@@ -969,6 +977,7 @@ class WebAgent(object):
                 time.sleep(5)
 
             self.execute(cmd=start_vm)
+            time.sleep(5)
             print("LiveDVD machine booting from the dvd")
 
         self.find_last_job_id()
@@ -1386,12 +1395,12 @@ class WebAgent(object):
             # print(self.error_code_unix_command(cmd))
             # print(counter)
             # print("Counter is up")
-            while self.error_code_unix_command(cmd) is not 0 and counter <= 60:
+            while self.error_code_unix_command(cmd) is not 0 and counter <= 50:
                 print("Wainting machine to be booted... %i" %counter)
                 time.sleep(10)
                 counter = counter + 1
                 #print(self.error_code_unix_command(cmd))
-            if self.error_code_unix_command(cmd) is 0 and counter <= 60:
+            if self.error_code_unix_command(cmd) is 0:
                 print("Network connection to the machine is available, assume that BMR is OK")
                 time.sleep(10)
                     #self.execute(cmd="display /tmp/bmr.png")
@@ -1401,6 +1410,7 @@ class WebAgent(object):
             print("Testing of the bootability of the machine is completed.")
 
         except:
+            print Exception
             pass
         finally:
             self.execute(cmd=poweroff_vm)
@@ -1414,6 +1424,8 @@ class WebAgent(object):
             time.sleep(5)
             self.execute(cmd=start_vm)
             print("Completed")
+            self.execute(cmd=poweroff_vm)
+            print("Machine poweroff")
 
 
 

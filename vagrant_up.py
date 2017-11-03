@@ -106,10 +106,9 @@ class VagrantAutomation(object):
                             sudo(stderr=False, command='kill -9 ' + result_clean)
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
-                    elif box_distro_name in ('rhel', 'centos'):
+                    elif box_distro_name in ('rhel', 'centos', 'sl'):
                         # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
                         # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
-                        pass
                         sudo('yum update -y', stdout=configuration_log)
                         sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
                         sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
@@ -122,8 +121,22 @@ class VagrantAutomation(object):
                         else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                     elif box_distro_name in ('sles', 'suse'):
                         sudo('zypper rr 2', stdout=configuration_log, shell=False)
-                        sudo('zypper -n update -y', stdout=configuration_log)
-                        sudo('zypper install -y ', + self.sles_packages, stdout=configuration_log)
+                        # Looks like the image of the SLES box already contains installed rapidrecovery-agent. Uninstall.
+                        sudo('zypper remove -y rapidrecovery-agent')
+                        sudo('zypper remove -y rapidrecovery-repo')
+                        sudo('zypper remove -y rapidrecovery-mono')
+                        sudo('zypper remove -y dkms')
+
+                        print("Hello")
+                        # there is bug in the non-interactive install on the
+                        # SLES OS, when there is conflicts on some packages,
+                        # you cannot avoid on by scripting in non-interactive mode.
+                        #sudo('zypper -n update -y', stdout=configuration_log)
+                        print(self.sles_packages)
+                        print('zypper install -n ' + self.sles_packages)
+                        sudo('zypper clean -M')
+                        sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
+                        sudo('zypper install -n -y ' + self.sles_packages)
 
 
                     sudo('uname -r')
@@ -168,7 +181,7 @@ class VagrantAutomation(object):
                         sudo('./agent_install.sh --install ' + self.build_agent,
                          stdout=installation_agent_log)
                         ipaddr = sudo(
-                        "ifconfig | grep 10.10. | awk '{print $2}' | sed 's/.*://'")
+                        "ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
                         self.write_cfg(ipaddr=ipaddr)
                     os.system("sudo /usr/bin/python2.7 web_runner.py")
 
@@ -242,7 +255,7 @@ if __name__ == '__main__':
         start.read_cfg(box_distro_name=vm)
         start.start_up()
         start.remove_archive()
-    start.parse_box_log()
+        start.parse_box_log()
     if start.run_web:
         start.parse_installation_agent_log()
 
