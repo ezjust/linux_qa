@@ -120,13 +120,8 @@ class VagrantAutomation(object):
                             sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
                         else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                     elif box_distro_name in ('sles', 'suse'):
-                        sudo('zypper rr 2', stdout=configuration_log, shell=False)
+                        #sudo('zypper rr 2', stdout=configuration_log, shell=False)
                         # Looks like the image of the SLES box already contains installed rapidrecovery-agent. Uninstall.
-                        sudo('zypper remove -y rapidrecovery-agent')
-                        sudo('zypper remove -y rapidrecovery-repo')
-                        sudo('zypper remove -y rapidrecovery-mono')
-                        sudo('zypper remove -y dkms')
-
                         print("Hello")
                         # there is bug in the non-interactive install on the
                         # SLES OS, when there is conflicts on some packages,
@@ -135,8 +130,9 @@ class VagrantAutomation(object):
                         print(self.sles_packages)
                         print('zypper install -n ' + self.sles_packages)
                         sudo('zypper clean -M')
-                        sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
-                        sudo('zypper install -n -y ' + self.sles_packages)
+                        sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python')
+                        #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
+                        sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages)
 
 
                     sudo('uname -r')
@@ -180,8 +176,9 @@ class VagrantAutomation(object):
                         sudo('chmod +x ./agent_install.sh')
                         sudo('./agent_install.sh --install ' + self.build_agent,
                          stdout=installation_agent_log)
-                        ipaddr = sudo(
-                        "ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
+                        #ipaddr = sudo(
+                        #"ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
+                        ipaddr = sudo("ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
                         self.write_cfg(ipaddr=ipaddr)
                     os.system("sudo /usr/bin/python2.7 web_runner.py")
 

@@ -41,11 +41,23 @@ Vagrant.configure("2") do |config|
     centos7.ssh.password = "vagrant"
   end
   config.vm.define "sles_12_x64" do |sles12|
-    sles12.vm.box = "/home/mbugaiov/Documents/boxes/sles12_x64.box"
+    sles12.vm.box = "/home/mbugaiov/Documents/boxes/sles_12_x64.box"
     sles12.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sles12.ssh.username = "vagrant"
     sles12.ssh.password = "vagrant"
   end
+  config.vm.define "sles_10_x64" do |sles10|
+    sles10.vm.box = "trueability/sles-12-sp2"
+    sles10.vm.box_version = "20171101.11"
+  end
+
+  config.vm.define "debian_9_x64" do |debian9|
+    debian9.vm.box = "/home/mbugaiov/Documents/boxes/debian_9_x64.box"
+    debian9.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    debian9.ssh.username = "vagrant"
+    debian9.ssh.password = "vagrant"
+  end
+
   config.vm.define "sl_7_x64" do |sl7|
     sl7.vm.box = "/home/mbugaiov/Documents/boxes/sl_7_x64.box"
     sl7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"

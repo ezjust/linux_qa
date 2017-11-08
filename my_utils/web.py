@@ -19,7 +19,7 @@ import time
 import re
 import urllib
 import datetime
-
+import sys
 # driver.implicitly_wait(10) # seconds
 
 work_path = os.path.abspath('.') + '/'  # Returns current directory, where script is run.
@@ -182,18 +182,27 @@ class WebAgent(object):
                 new = self.driver.find_element_by_xpath(
                 ".//*[@id='protectMachine']/a[1]")
             else:
+                print('7.0.0')
+                print('test')
                 WebDriverWait(self.driver, self.short_timeout).until(
                     EC.element_to_be_clickable(
-                        (By.XPATH, ".//*[@id='protectMachine']/div[1]")))
+                        (By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
                 new = self.driver.find_element_by_xpath(
-                    ".//*[@id='protectMachine']/div[1]")
+                    ".//*[@id='protectMachine']/a[1]/span")
+                while new.text not in "Protect":
+                    WebDriverWait(self.driver, self.short_timeout).until(
+                        EC.element_to_be_clickable(
+                            (
+                            By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
+                    new = self.driver.find_element_by_xpath(
+                        ".//*[@id='protectMachine']/a[1]/span")
+            #time.sleep(5)
             new.click()
             print("here2")
             WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='btnWizardDefault']")))
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
-
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='hostName']")))
 
@@ -471,6 +480,7 @@ class WebAgent(object):
 
 
         finally:
+            print('Remove RPs')
             '''Wait in self.status while all RPs are removed from the agent.
                         Return the status of this task'''
             if not_protected is None:
