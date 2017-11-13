@@ -73,7 +73,22 @@ class TestRunner(object):
     def teardown(self):
         pass
 
+    def open_log(self):
+        self.result_log = open("result.log", 'a+')
 
+    def write_log(self, message):
+        self.message = message
+        self.open_log()
+        self.result_log.write(self.message)
+
+    def close_log(self):
+        self.result_log = open("result.log", 'a+')
+        self.result_log.close()
+
+    def remove_log(self):
+        if os.path.isfile('result.log'):
+            os.remove('result.log')
+            print('REMOVED RESULT.LOG')
 
     def run_tests(self):
         result = True
@@ -121,6 +136,7 @@ class TestRunner(object):
                                     self.executor.log("Cleaning Up %s test ....\n" % key)
                                     test.tearDown()
                                     print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
+                                    self.write_log(message="Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
                                     print("================================================================="
                                                   "\n"
                                                   "\n"

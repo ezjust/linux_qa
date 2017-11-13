@@ -1,4 +1,5 @@
 from __future__ import print_function, with_statement
+from web_runner import *
 import vagrant
 from fabric.api import *
 from fabric.network import disconnect_all
@@ -8,6 +9,7 @@ import tarfile
 import ConfigParser
 import time
 import subprocess
+
 
 log_cm = vagrant.make_file_cm('deployment.log')
 configuration_log = open('configuration.log', 'a+')
@@ -89,6 +91,9 @@ class VagrantAutomation(object):
             except Exception:
                 time.sleep(60)
                 v.up(vm_name=self.box_distro_name)
+            #TestRunner().open_log()
+
+            TestRunner().write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
 
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
                 try:
@@ -129,10 +134,10 @@ class VagrantAutomation(object):
                         #sudo('zypper -n update -y', stdout=configuration_log)
                         print(self.sles_packages)
                         print('zypper install -n ' + self.sles_packages)
-                        sudo('zypper clean -M')
-                        sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python')
+                        sudo('zypper clean -M', stdout=configuration_log)
+                        sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
                         #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
-                        sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages)
+                        sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
 
 
                     sudo('uname -r')
@@ -166,13 +171,13 @@ class VagrantAutomation(object):
 
                 if self.run_web:
                     if self.run_configurator:
-                        sudo('wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
+                        sudo('wget https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
                         sudo('chmod +x ./configurator.sh')
                         sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
                         run('lsblk')
                     if self.install_agent:
                         sudo(
-                        'wget --user=mbugaiov --password=201988 https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
+                        'wget https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
                         sudo('chmod +x ./agent_install.sh')
                         sudo('./agent_install.sh --install ' + self.build_agent,
                          stdout=installation_agent_log)
@@ -180,6 +185,7 @@ class VagrantAutomation(object):
                         #"ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
                         ipaddr = sudo("ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
                         self.write_cfg(ipaddr=ipaddr)
+                    time.sleep(5)
                     os.system("sudo /usr/bin/python2.7 web_runner.py")
 
                 print("Testing is completed")
@@ -254,9 +260,15 @@ if __name__ == '__main__':
         start.remove_archive()
         start.parse_box_log()
     if start.run_web:
-        start.parse_installation_agent_log()
-
-
+        #start.parse_installation_agent_log()
+        pass
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    with open('result.log') as f:
+        for line in f:
+            print(line)
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    TestRunner().close_log()
+    TestRunner().remove_log() # remove log.
 
 
 

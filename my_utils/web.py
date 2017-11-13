@@ -363,12 +363,13 @@ class WebAgent(object):
             #print("HERE5")
 
         except Exception:
-            #print("HERE")
+            print("HERE")
             print Exception
             raise Exception
 
 
         finally:
+            print('Finaly')
             pass
 
     def force_snapshot(self, ip_machine, base):
@@ -483,8 +484,8 @@ class WebAgent(object):
             print('Remove RPs')
             '''Wait in self.status while all RPs are removed from the agent.
                         Return the status of this task'''
-            if not_protected is None:
-                self.core_status(ip_machine)
+            # if not_protected is None:
+            #     self.core_status(ip_machine)
             print("The agent removed")
             pass
 
@@ -600,19 +601,27 @@ class WebAgent(object):
                 value = value[1].split(" ", 1)
                 value = value[0].split('value="', 1)[1]
 
-            #print(value)
+            # print(value)
             title = re.findall('title=".*?"', str(substring))
-            title = title[0].split('"', 1)
+            # print title
+            # print('1')
+            title = title[1].split('"', 1)   # was title[0] before. Is not working now.
+                                             # Fix is tested on the 7.1.0
+
+            # print title
+            # print('2')
             title = title[1][0:(len(title[1]) - 1)]
+            # print title
+            # print('3')
             if len(title) > 20:
                 #print("I am here")
                 if " of " in title:
-                    #print("Gottcha")
+                    print("Gottcha")
                     title = "In Progress"
             #print(title)
             instert(id=list_id[i], value=value, result=title, dict=stat)
 
-        #print(stat)
+        # print(stat)
         #pp = pprint.PrettyPrinter(indent=4)
         #pp.pprint(stat)
         #print("list_events_completed")
@@ -723,14 +732,14 @@ class WebAgent(object):
         active_event = None
 
         a = self.list_events(ip_machine)
-        #print(a)
+        # print(a)
         b = "661ee30c-72c5-402e-8472-5589a6e66943"
         # print(a.get(b)[0])
 
         while self.last_job_attr == self.list_events(ip_machine):
             print("Equal")
             time.sleep(3)
-        #print("New event received")
+        # print("New event received")
         test = self.list_events(ip_machine)
         for item in test:
             if item not in self.last_job_attr:
@@ -738,7 +747,7 @@ class WebAgent(object):
                     active_event = item
                     event_status = test.get(item)[1] # return status of the event
                     event_name = test.get(item)[0] # return name of the event
-                    #print(event_status)
+                    # print(event_status)
                     time.sleep(0.1)
                     test = self.list_events(ip_machine)
 
@@ -1405,7 +1414,7 @@ class WebAgent(object):
             # print(self.error_code_unix_command(cmd))
             # print(counter)
             # print("Counter is up")
-            while self.error_code_unix_command(cmd) is not 0 and counter <= 50:
+            while self.error_code_unix_command(cmd) is not 0 and counter <= 30:
                 print("Wainting machine to be booted... %i" %counter)
                 time.sleep(10)
                 counter = counter + 1
@@ -1420,8 +1429,7 @@ class WebAgent(object):
             print("Testing of the bootability of the machine is completed.")
 
         except:
-            print Exception
-            pass
+            raise Exception
         finally:
             self.execute(cmd=poweroff_vm)
             print("Machine poweroff")
