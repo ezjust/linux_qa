@@ -249,8 +249,8 @@ if __name__ == '__main__':
     start.clean_box_log()
     start.clean_installation_agent_log()
     start.clean_configuration_log()
-
     start.open_box_log()
+    TestRunner().remove_log() # remove log with the results of the execution tests.
 
     for vm in start.os_list:
         print(vm + " : executing....")
@@ -268,7 +268,5 @@ if __name__ == '__main__':
             print(line)
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     TestRunner().close_log()
-    TestRunner().remove_log() # remove log.
-
 
 

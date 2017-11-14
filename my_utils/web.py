@@ -34,6 +34,7 @@ def read_cfg():
     username_machine = cp.get('web', 'username_machine')
     password_machine = cp.get('web', 'password_machine')
     ip_livecd = cp.get('web', 'ip_livecd')
+    build_agent = cp.get('general', 'build_agent')
     pass_livecd = cp.get('web', 'pass_livecd')
     vbox_vmname = cp.get('web', 'vbox_livedvdname')
     vbox_export_vmname = cp.get('web', 'vbox_export_vmname')
@@ -46,10 +47,10 @@ def read_cfg():
     auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
     bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
     force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname
+    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname
 
 
-ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, build_agent, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname = read_cfg()
 
 
 class WebAgent(object):
@@ -605,7 +606,10 @@ class WebAgent(object):
             title = re.findall('title=".*?"', str(substring))
             # print title
             # print('1')
-            title = title[1].split('"', 1)   # was title[0] before. Is not working now.
+            if build_agent == '7.0.0':
+                title = title[0].split('"', 1)
+            else:
+                title = title[1].split('"', 1)   # was title[0] before. Is not working now.
                                              # Fix is tested on the 7.1.0
 
             # print title
@@ -616,7 +620,7 @@ class WebAgent(object):
             if len(title) > 20:
                 #print("I am here")
                 if " of " in title:
-                    print("Gottcha")
+                    #print("Gottcha")
                     title = "In Progress"
             #print(title)
             instert(id=list_id[i], value=value, result=title, dict=stat)
@@ -735,22 +739,23 @@ class WebAgent(object):
         # print(a)
         b = "661ee30c-72c5-402e-8472-5589a6e66943"
         # print(a.get(b)[0])
-
-        while self.last_job_attr == self.list_events(ip_machine):
-            print("Equal")
-            time.sleep(3)
-        # print("New event received")
-        test = self.list_events(ip_machine)
-        for item in test:
-            if item not in self.last_job_attr:
-                while event_status not in ("Succeeded", "Error"):
-                    active_event = item
-                    event_status = test.get(item)[1] # return status of the event
-                    event_name = test.get(item)[0] # return name of the event
-                    # print(event_status)
-                    time.sleep(0.1)
-                    test = self.list_events(ip_machine)
-
+        try:
+            while self.last_job_attr == self.list_events(ip_machine):
+                print("Equal")
+                time.sleep(3)
+            # print("New event received")
+            test = self.list_events(ip_machine)
+            for item in test:
+                if item not in self.last_job_attr:
+                    while event_status not in ("Succeeded", "Error"):
+                        active_event = item
+                        event_status = test.get(item)[1] # return status of the event
+                        event_name = test.get(item)[0] # return name of the event
+                        # print(event_status)
+                        time.sleep(0.1)
+                        test = self.list_events(ip_machine)
+        except:
+            raise Exception
         # print("Completed")
         # print(active_event)
         # print(event_status)
@@ -1251,6 +1256,7 @@ class WebAgent(object):
                 self.wait_for_element_invisible("lpLoadingContent")
                 WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "btnWizardDefault")))
                 self.driver.find_element_by_id("btnWizardDefault").click()
+                print("I have adjusted all export tasks")
                 break
 
 
