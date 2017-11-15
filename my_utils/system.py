@@ -203,7 +203,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def install_distname(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        if distributive.lower() in ["rhel", "centos", "oracle"]:
+        if distributive.lower() in ["rhel", "centos", "oracle", "scientific"]:
             return "rhel"
         elif distributive.lower() in ["ubuntu", "debian"]:
             return "debian"
@@ -215,7 +215,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def install_packmanager(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        if distributive.lower() in ["rhel", "centos", "oracle"]:
+        if distributive.lower() in ["rhel", "centos", "oracle", "scientific"]:
            return "rpm"
         elif distributive.lower() in ["ubuntu", "debian"]:
            return "deb"
@@ -227,7 +227,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def packmanager(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        if distributive.lower() in ["rhel", "centos", "oracle"]:
+        if distributive.lower() in ["rhel", "centos", "oracle", "scientific"]:
            return "rpm"
         elif distributive.lower() in ["ubuntu", "debian"]:
            return "dpkg"
@@ -239,7 +239,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def installed_package(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        if distributive.lower() in ["rhel", "centos", "oracle"]:
+        if distributive.lower() in ["rhel", "centos", "oracle", "scientific"]:
            return "rpm -qa"
         elif distributive.lower() in ["ubuntu", "debian"]:
            return "dpkg --list"
@@ -251,7 +251,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def software_manager(self):
         distributive = self.distname().split()
         distributive = distributive[0]
-        if distributive.lower() in ["rhel", "centos", "oracle"]:
+        if distributive.lower() in ["rhel", "centos", "oracle", "scientific"]:
            return "yum"
         elif distributive.lower() in ["ubuntu", "debian"]:
            return "apt-get"
@@ -270,9 +270,9 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             return "8"
         elif distributive.lower() in "debian, ubuntu" and version in ["12.04", "12.10", "14.04", "14.10", "7"]:
             return "7"
-        elif distributive.lower() in "rhel, centos, oracle" and version in ["7.0", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"]:
+        elif distributive.lower() in "rhel, centos, oracle, scientific" and version in ["7.0", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9"]:
             return "7"
-        elif distributive.lower() in "rhel, centos, oracle" and version in ["6.0", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9"]:
+        elif distributive.lower() in "rhel, centos, oracle, scientific" and version in ["6.0", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9"]:
             return "6"
         elif distributive.lower() in "sles, suse" and version in ["11", "11.0", "11.1", "11.2", "11.3"]:
             return "11"
@@ -323,7 +323,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             update = "sudo " + check.software_manager() + " update -y"
             execute.execute(update)
             #print self.agent
-            clean_all = "sudo " + check.software_manager() + " clean all"
+            if self.install_distname() == "sles":
+                clean_all = "sudo " + check.software_manager() + " clean -M"
+            else:
+                clean_all = "sudo " + check.software_manager() + " clean all"
             # print(clean_all)
             execute.execute(clean_all)
             execute.execute(update)
