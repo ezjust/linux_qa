@@ -22,24 +22,37 @@ class RapidrecoveryConfig(Agent):
                 self.file_exists(result=True, file=config)
                 self.file_exists(result=False, file=configuration_log)
                 self.rapidrecovery_config_api(port="8006", user="vagrant", method="ufw", build="all", start=True)
-                self.parse_configuration_log()
 
-
-            elif self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
+            elif self.install_distname() in ["rhel", "centos", "oracle"]:
 
                 if self.install_version() is "7":
                     firewall = "firewalld"
                 else:
                     firewall = "lokkit"
-
                 self.file_exists(result=True, file=config)
                 self.file_exists(result=False, file=configuration_log)
-                self.rapidrecovery_config_api(port="8006", user="vagrant", method=firewall,
+                self.rapidrecovery_config_api(port="8006", user="vagrant",
+                                              method=firewall,
                                               build="all", start=True)
-                self.parse_configuration_log()
+
+            elif self.install_distname() in ["suse", "sles"]:
+                if self.execute.error_code(cmd='sudo /sbin/rcSuSEfirewall2 status') is 3: #check that firewall is disabled
+                    self.file_exists(result=True, file=config)
+                    self.file_exists(result=False, file=configuration_log)
+                    self.rapidrecovery_config_api(port="8006", user="vagrant", build="all", snapper="disable", start=True)
+                else:
+                    firewall = "lokkit"
+                    self.file_exists(result=True, file=config)
+                    self.file_exists(result=False, file=configuration_log)
+                    self.rapidrecovery_config_api(port="8006", user="vagrant", method=firewall,
+                                              build="all", snapper="disable", start=True)
+
             else:
                 return Exception("The error in expected test result")
+
         except Exception as E:
             print(E)
             raise Exception
 
+        finally:
+            self.parse_configuration_log()

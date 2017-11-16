@@ -303,8 +303,9 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         install = "sudo " + check.packmanager() + " -i" + " repo"
         execute = Executor()
         execute.execute(install)
-        update = "sudo " + check.software_manager() + " update"
-        execute.execute(update)
+        if self.install_distname() != "sles":
+            update = "sudo " + check.software_manager() + " update"
+            execute.execute(update)
 
     def install_agent_fromrepo(self):
         self.create_link()
@@ -320,22 +321,24 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             elif self.check_installed_code_rapid() not in [0, 1]:
                 raise Exception("Received not [0,1] result code for check rapid")
 
-            update = "sudo " + check.software_manager() + " update -y"
-            execute.execute(update)
-            #print self.agent
             if self.install_distname() == "sles":
                 clean_all = "sudo " + check.software_manager() + " clean -M"
+                execute.execute(clean_all)
+                installation = "sudo " + check.software_manager() + " --gpg-auto-import-keys" + " install" + " -y " + self.agent
+
             else:
+                update = "sudo " + check.software_manager() + " update -y"
+                execute.execute(update)
                 clean_all = "sudo " + check.software_manager() + " clean all"
+                execute.execute(clean_all)
+                installation = "sudo " + check.software_manager() + " install" + " -y " + self.agent
+                #execute.execute(update)
             # print(clean_all)
-            execute.execute(clean_all)
-            execute.execute(update)
-            installation = "sudo " + check.software_manager() + " install" + " -y " + self.agent
             # print installation
             execute.execute(installation)
 
         except Exception as e:
-            print(e)
+            raise(e)
 
 
     def check_installed_code_rapid(self):
@@ -358,8 +361,12 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         execute = Executor()
 
         if self.check_installed_code_rapid() is 0:
-            uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
-            unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
+            if self.install_distname() == "sles":
+                uninstallation_agent = self.software_manager() + " remove" + " -y" + " " + self.agent
+                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*"
+            else:
+                uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
+                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
             execute.execute(uninstallation_agent)
             not_removed = execute.execute(
                 self.software_manager() + " | grep rapid | awk '{print $2}'")[
@@ -382,15 +389,23 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             execute.execute(uninstallation_dkms)
         else:
             # print("I am in else statement")
-            autoremove = "sudo " + self.software_manager() + " -y" + " autoremove"
-            execute.execute(autoremove)
-            uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
-            execute.execute(uninstallation_dkms)
+            if self.install_distname() != "sles":
+                autoremove = "sudo " + self.software_manager() + " -y" + " autoremove"
+                uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
+                execute.execute(autoremove)
+                execute.execute(uninstallation_dkms)
+            else:
+                uninstallation_dkms = self.software_manager() + " remove" + " -y" + " dkms"
+                execute.execute(uninstallation_dkms)
+
 
 
     def uninstall_repo(self):
         execute = Executor()
-        uninstallation_repo = self.software_manager() + " remove" + " " + self.repo
+        if self.install_distname() == "sles":
+            uninstallation_repo = self.software_manager() + " remove" + " -y " + self.repo
+        else:
+            uninstallation_repo = self.software_manager() + " remove" + " " + self.repo
         execute.execute(uninstallation_repo)
 
     def get_process_pid(self, cmd):
@@ -557,7 +572,7 @@ class Agent(Repoinstall):
         result = self.execute.execute(self.rapid_vss_installed)[0][0].rstrip()
         return result
 
-    def rapidrecovery_config_api(self, port=None, user=None, method=None, build=None, start=None, vault=None, delete_user=None):
+    def rapidrecovery_config_api(self, port=None, user=None, method=None, build=None, start=None, vault=None, delete_user=None, snapper=None):
         '''
         :param port: 8006 
         :param user: rr
@@ -566,6 +581,7 @@ class Agent(Repoinstall):
         :param start: true
         :param vault: on, off
         :param delete_user: rr
+        :param snapper: disable
         :return: True/False
         '''
         if build:
@@ -582,7 +598,8 @@ class Agent(Repoinstall):
             self.vault = vault
         if delete_user:
             self.delete_user = delete_user
-
+        if snapper:
+            self.snapper = snapper
         config = "/usr/bin/rapidrecovery-config"
         try:
             if port:
@@ -599,11 +616,22 @@ class Agent(Repoinstall):
                 self.execute.execute(cmd=config + " -v " + self.vault)
             if delete_user:
                 self.execute.execute(cmd=config + " -d " + self.delete_user)
+            if snapper:
+                self.execute.execute(cmd=config + " -n " + self.snapper)
             return True
 
         except Exception as E:
             print E
             raise Exception
+
+    def rapidrecovery_config_parser(self, word):
+
+        '''
+               Parse some text in the rapidrecovery-config default view.
+               :return: True/False
+               '''
+        self.word = word
+
 
 
     def parse_configuration_log(self):

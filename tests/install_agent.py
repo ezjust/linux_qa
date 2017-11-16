@@ -19,7 +19,7 @@ class InstallAgent(Repoinstall, SystemUtils):
     def runTest(self):
         # print("Start")
         if self.check_initd() == 'systemctl':
-            if self.install_distname() in ["ubuntu", "debian"]:
+            if self.install_distname() in ["ubuntu", "debian", "sles"]:
                 self.status_of_the_service('rapidrecovery-agent' , 3) #error code 3 is received when service is not istalled
             else:
                 self.status_of_the_service('rapidrecovery-agent' , 4) #error code 3 is received when service is not istalled
