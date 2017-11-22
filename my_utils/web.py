@@ -1,4 +1,6 @@
+from virtualbox import Virtualbox
 import splinter
+import traceback
 import os
 import selenium
 import subprocess
@@ -34,7 +36,6 @@ def read_cfg():
     username_machine = cp.get('web', 'username_machine')
     password_machine = cp.get('web', 'password_machine')
     ip_livecd = cp.get('web', 'ip_livecd')
-    build_agent = cp.get('general', 'build_agent')
     pass_livecd = cp.get('web', 'pass_livecd')
     vbox_vmname = cp.get('web', 'vbox_livedvdname')
     vbox_export_vmname = cp.get('web', 'vbox_export_vmname')
@@ -47,10 +48,10 @@ def read_cfg():
     auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
     bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
     force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname
+    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname
 
 
-ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, build_agent, protect_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, build_agent, vbox_export_vmname = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname = read_cfg()
 
 
 class WebAgent(object):
@@ -58,6 +59,8 @@ class WebAgent(object):
     long_timeout = 200
     agent_link = None
     id_agent = None
+
+    virtualbox = Virtualbox()
 
     def __init__(self):
         self.driver = webdriver.Firefox()
@@ -121,30 +124,30 @@ class WebAgent(object):
             except Exception:
                 continue
             # print("self.ip  is up")
-
-    def find_machine_link2(self):
-        print("I am in find machine link")
-        WebDriverWait(self.driver, self.long_timeout).until(
-            EC.presence_of_element_located((By.TAG_NAME, 'a')))
-        try:
-            set_of_machine = self.driver.find_element(By.ID,
-                                                      "apgProtected").find_elements_by_tag_name(
-                'a')
-            # print set_of_machine
-            for elem in set_of_machine:
-
-                test = elem.get_attribute('href')
-                # print test
-                # print elem.text
-                # print(self.ip)
-                # print("self.ip  is up")
-                if elem.text in self.ip_machine:
-                    self.agent_link = test
-                    self.id_agent = re.split('Machines/*', self.agent_link)[1]
-                    # print(self.agent_link)
-                    return (self.agent_link)
-        except StaleElementReferenceException:
-            pass
+    #
+    # def find_machine_link2(self):
+    #     print("I am in find machine link")
+    #     WebDriverWait(self.driver, self.long_timeout).until(
+    #         EC.presence_of_element_located((By.TAG_NAME, 'a')))
+    #     try:
+    #         set_of_machine = self.driver.find_element(By.ID,
+    #                                                   "apgProtected").find_elements_by_tag_name(
+    #             'a')
+    #         # print set_of_machine
+    #         for elem in set_of_machine:
+    #
+    #             test = elem.get_attribute('href')
+    #             # print test
+    #             # print elem.text
+    #             # print(self.ip)
+    #             # print("self.ip  is up")
+    #             if elem.text in self.ip_machine:
+    #                 self.agent_link = test
+    #                 self.id_agent = re.split('Machines/*', self.agent_link)[1]
+    #                 # print(self.agent_link)
+    #                 return (self.agent_link)
+    #     except StaleElementReferenceException:
+    #         pass
 
     def find_last_job_id(self):
 
@@ -605,22 +608,28 @@ class WebAgent(object):
             # print(value)
             title = re.findall('title=".*?"', str(substring))
             # print title
-            # print('1')
+            # print('134')
             if build_agent == '7.0.0':
-                title = title[0].split('"', 1)
+                # print "Build agent is 7.0.0"
+                title = title[0].split('"', 1)                                 #7.0.0 title: ['title=', 'Succeeded"']
+                                                                               #7.1.0 title: ['Succeeded', '']
+
+                # print("7.0.0 title: %s" % title)
+                # print("7.1.0 title: %s" % title[1].split('"', 1))
             else:
+                # print "Build agent is 7.1.0"
                 title = title[1].split('"', 1)   # was title[0] before. Is not working now.
                                              # Fix is tested on the 7.1.0
 
             # print title
-            # print('2')
+            #print('2')
             title = title[1][0:(len(title[1]) - 1)]
-            # print title
-            # print('3')
+            #print title
+            #print('3')
             if len(title) > 20:
-                #print("I am here")
+                # print("I am here")
                 if " of " in title:
-                    #print("Gottcha")
+                    # print("Gottcha")
                     title = "In Progress"
             #print(title)
             instert(id=list_id[i], value=value, result=title, dict=stat)
@@ -741,14 +750,15 @@ class WebAgent(object):
         # print(a.get(b)[0])
         try:
             while self.last_job_attr == self.list_events(ip_machine):
-                print("Equal")
-                time.sleep(3)
+                #print("Equal")
+                time.sleep(10)
             # print("New event received")
             test = self.list_events(ip_machine)
             for item in test:
                 if item not in self.last_job_attr:
                     while event_status not in ("Succeeded", "Error"):
                         active_event = item
+                        # print test.get(item)
                         event_status = test.get(item)[1] # return status of the event
                         event_name = test.get(item)[0] # return name of the event
                         # print(event_status)
@@ -757,9 +767,9 @@ class WebAgent(object):
         except:
             raise Exception
         # print("Completed")
-        # print(active_event)
-        # print(event_status)
-        # print(event_name)
+        #print(active_event)
+        #print(event_status)
+        #print(event_name)
 
 
 
@@ -1122,7 +1132,10 @@ class WebAgent(object):
         #print(popup.text)
         if "The type of source BIOS" in popup.text:
             print("I am in popup.text")
+            self.firmware = "EFI"
             self.driver.find_element_by_id("1").click()
+        else:
+            self.firmware = "BIOS"
         time.sleep(5)
         print('BMR is started.......')
 
@@ -1263,7 +1276,7 @@ class WebAgent(object):
 
         print('VBOX export is started.......')
 
-    def export_vbox_bootable(self, ip_machine, vbox_export_vmname):
+    def export_vbox_bootable2(self, ip_machine, vbox_export_vmname):
 
         self.vmname = vbox_export_vmname
         self.ip = ip_machine
@@ -1327,6 +1340,42 @@ class WebAgent(object):
 
             self.execute(cmd=remove_exported_from_disk)
             print("Competed cleanup")
+
+    def export_vbox_bootable(self, ip_machine, vbox_export_vmname):
+
+        self.vm = vbox_export_vmname
+        self.ip = ip_machine
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
+        self.bootability = None
+
+        # poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+        # start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+        # boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+        # boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
+        # restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+        # status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        # clean_dvd = "sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive"
+        # check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
+
+        try:
+            self.virtualbox.modify_vm(vmname=self.vm)
+            self.virtualbox.start_vm(vmname=self.vm)
+            self.virtualbox.ping_vm(vmame=self.vm)
+
+        except Exception as E:
+            print traceback.extract_stack()
+            print E
+            raise Exception
+
+        finally:
+            self.virtualbox.poweroff_vm(vmname=self.vm)
+            time.sleep(10)
+            self.virtualbox.unregister_vm(vmname=self.vm)
+            time.sleep(5)
+            self.virtualbox.remove_from_disk_vm(vmname=self.vm)
+            print("Competed cleanup")
+
 
     def error_code_unix_command(self, cmd=None):
         # type: (object) -> object
@@ -1399,56 +1448,45 @@ class WebAgent(object):
         check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
 
         try:
-            # print(self.error_code_unix_command(cmd=poweroff_vm))
             status = self.execute(cmd=status_vm)[0][0]
             if "running" in status:
-                print("I am here")
-                self.execute(cmd=poweroff_vm)
-                print("Machine poweroff")
+                self.virtualbox.poweroff_vm(vmname=self.vmname)
                 time.sleep(10)
-            self.execute(cmd=boot_vm_disk)
+            self.virtualbox.boot_disk_vm(vmname=self.vmname)
             print("Machine settings: Boot from disk")
             time.sleep(10)
-            self.execute(cmd=clean_dvd)
+            self.virtualbox.clean_dvd_vm(vmname=self.vmname)
             time.sleep(5)
-            self.execute(cmd=start_vm)
+            print('The firmware of the machine is: %s' % self.firmware)
+            self.virtualbox.start_vm(vmname=self.vmname)
             print("Machine started")
 
+            '''Check the IP adress of the machine. Needs to ping it after boot
+            to make sure that machine is reachable.'''
 
-            cmd = "ping -c 1 " + self.ip_cd
-            print(cmd)
-            # print(self.error_code_unix_command(cmd))
-            # print(counter)
-            # print("Counter is up")
-            while self.error_code_unix_command(cmd) is not 0 and counter <= 30:
-                print("Wainting machine to be booted... %i" %counter)
-                time.sleep(10)
-                counter = counter + 1
-                #print(self.error_code_unix_command(cmd))
-            if self.error_code_unix_command(cmd) is 0:
-                print("Network connection to the machine is available, assume that BMR is OK")
-                time.sleep(10)
-                    #self.execute(cmd="display /tmp/bmr.png")
-            else:
-                self.execute(cmd="vboxmanage controlvm " + self.vmname + " screenshotpng /tmp/bmr.png")
-                raise Exception("The machine was not booted within 10 minutes. Assume that BMR FAILED.")
-            print("Testing of the bootability of the machine is completed.")
+            self.virtualbox.ping_vm(vmame=self.vmname)
 
-        except:
+        except Exception as E:
+            print traceback.extract_stack()
+            print E
             raise Exception
+
         finally:
-            self.execute(cmd=poweroff_vm)
+
+            #TODO Investigate is it possible to remove poweroff_vm and boot_vm_dvd and start only from the restore_snap.
+
+            self.virtualbox.poweroff_vm(vmname=self.vmname)
             print("Machine poweroff")
             time.sleep(10)
-            self.execute(cmd=boot_vm_dvd)
+            self.virtualbox.boot_dvd_vm(vmname=self.vmname)
             print("Machine settings: Boot from dvd")
             time.sleep(10)
-            self.execute(cmd=restore_snap)
+            self.virtualbox.restore_snap_vm(vmname=self.vmname)
             print("Snapshot restored")
             time.sleep(5)
-            self.execute(cmd=start_vm)
+            self.virtualbox.start_vm(vmname=self.vmname)
             print("Completed")
-            self.execute(cmd=poweroff_vm)
+            self.virtualbox.poweroff_vm(vmname=self.vmname)
             print("Machine poweroff")
 
 

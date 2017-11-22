@@ -48,7 +48,7 @@ class RapidrecoveryConfig(Agent):
                                               build="all", snapper="disable", start=True)
 
             else:
-                return Exception("The error in expected test result")
+                return Exception("The is error in the os determination/")
 
         except Exception as E:
             print(E)
