@@ -21,7 +21,7 @@ class Virtualbox(object):
             ip = None
 
         counter = 0
-        while not ip and counter < 20:
+        while not ip and counter < 60:
             time.sleep(5)
             counter += 1
             try:

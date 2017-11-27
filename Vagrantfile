@@ -34,6 +34,11 @@ Vagrant.configure("2") do |config|
 
   end
 
+  
+  config.vm.define "efi" do |efi|
+    efi.vm.box = "poad/ubuntu-zesty-desktop"
+    efi.vm.box_version = "0.0.1"
+  end
   config.vm.define "centos_7_x64" do |centos7|
     centos7.vm.box = "/home/mbugaiov/Documents/boxes/centos_7_x64.box"
     centos7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"

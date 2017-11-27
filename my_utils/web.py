@@ -63,17 +63,24 @@ class WebAgent(object):
     virtualbox = Virtualbox()
 
     def __init__(self):
-        self.driver = webdriver.Firefox()
-        self.driver.set_page_load_timeout(30)
-        self.driver.implicitly_wait(30)
-        self.driver.accept_untrusted_certs = True
-        self.driver.assume_untrusted_cert_issuer = True
-        self.driver.get(core_link)
-        #self.driver.refresh()
+        try:
+            self.driver = webdriver.Firefox()
+            try:
+                self.driver.set_page_load_timeout(30) #stopped work in the newest firefox. Before was ok.
+            except WebDriverException:
+                time.sleep(5)
+                pass
+            #self.driver.implicitly_wait(30)
+            self.driver.accept_untrusted_certs = True
+            self.driver.assume_untrusted_cert_issuer = True
+            self.driver.get(core_link)
+            #self.driver.refresh()
+        except Exception:
+            print Exception
 
     def open_core_ui(self):
         try:
-            WebDriverWait(self.driver, 3).until(EC.alert_is_present())
+            WebDriverWait(self.driver, 10).until(EC.alert_is_present())
             asd = self.driver.switch_to_alert()
             asd.send_keys("Administrator")
             asd.send_keys(Keys.TAB + '123asdQ')
@@ -180,27 +187,50 @@ class WebAgent(object):
             print("I am starting to protect agent %s, %s, %s" % (self.ip_machine, self.username, self.password))
             # print("here")
             if build_agent == '7.1.0':
-                WebDriverWait(self.driver, self.short_timeout).until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, ".//*[@id='protectMachine']/a[1]")))
-                new = self.driver.find_element_by_xpath(
-                ".//*[@id='protectMachine']/a[1]")
+                try:
+                    WebDriverWait(self.driver, self.short_timeout).until(
+                EC.element_to_be_clickable((By.XPATH, ".//*[@id='protectMachine']/a[1]")))
+                    new = self.driver.find_element_by_xpath(".//*[@id='protectMachine']/a[1]")
+                except WebDriverException:
+                    time.sleep(5)
+                    WebDriverWait(self.driver, self.short_timeout).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, ".//*[@id='protectMachine']/a[1]")))
+                    new = self.driver.find_element_by_xpath(
+                        ".//*[@id='protectMachine']/a[1]")
             else:
                 print('7.0.0')
                 print('test')
-                WebDriverWait(self.driver, self.short_timeout).until(
-                    EC.element_to_be_clickable(
-                        (By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
-                new = self.driver.find_element_by_xpath(
-                    ".//*[@id='protectMachine']/a[1]/span")
-                while new.text not in "Protect":
+                try:
                     WebDriverWait(self.driver, self.short_timeout).until(
                         EC.element_to_be_clickable(
-                            (
-                            By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
+                            (By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
                     new = self.driver.find_element_by_xpath(
                         ".//*[@id='protectMachine']/a[1]/span")
+                    while new.text not in "Protect":
+                        WebDriverWait(self.driver, self.short_timeout).until(
+                            EC.element_to_be_clickable(
+                                (
+                                By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
+                        new = self.driver.find_element_by_xpath(
+                            ".//*[@id='protectMachine']/a[1]/span")
+                except WebDriverException:
+                    time.sleep(5)
+                    WebDriverWait(self.driver, self.short_timeout).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, ".//*[@id='protectMachine']/a[1]/span")))
+                    new = self.driver.find_element_by_xpath(
+                    ".//*[@id='protectMachine']/a[1]/span")
+                    while new.text not in "Protect":
+                        WebDriverWait(self.driver, self.short_timeout).until(
+                        EC.element_to_be_clickable(
+                            (
+                                By.XPATH,
+                                ".//*[@id='protectMachine']/a[1]/span")))
+                        new = self.driver.find_element_by_xpath(
+                        ".//*[@id='protectMachine']/a[1]/span")
             #time.sleep(5)
+            #WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable(new))
             new.click()
             print("here2")
             WebDriverWait(self.driver, self.long_timeout).until(EC.text_to_be_present_in_element((By.CLASS_NAME, "wizard-header-info"), "The Protect Machine wizard helps you to quickly and easily protect a machine."))
