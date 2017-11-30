@@ -1,5 +1,5 @@
 from virtualbox import Virtualbox
-import splinter
+from system import Executor
 import traceback
 import os
 import selenium
@@ -12,9 +12,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver import ActionChains
-import pprint
-import urllib2
-import ssl
 from selenium.common.exceptions import *
 from bs4 import BeautifulSoup
 import time
@@ -40,18 +37,19 @@ def read_cfg():
     vbox_vmname = cp.get('web', 'vbox_livedvdname')
     vbox_export_vmname = cp.get('web', 'vbox_export_vmname')
     core_ip = cp.get('general', 'core_ip')
+    core_login = cp.get('general', 'core_login')
+    core_password = cp.get('general', 'core_password')
     core_link = 'https://' + core_ip + ':8006/apprecovery/admin'
-    web_count = cp.get('web', 'web_count')
     protect_agent = cp.get('web', 'protect_agent')
     build_agent = cp.get('general', 'build_agent')
     rollback_agent = cp.get('web', 'rollback_agent')
     auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
     bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
     force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-    return ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname
+    return ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname
 
 
-ip_machine, username_machine, password_machine, ip_livecd, pass_livecd, vbox_vmname, core_link, web_count, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname = read_cfg()
 
 
 class WebAgent(object):
@@ -61,6 +59,7 @@ class WebAgent(object):
     id_agent = None
 
     virtualbox = Virtualbox()
+    execute = Executor()
 
     def __init__(self):
         try:
@@ -74,7 +73,7 @@ class WebAgent(object):
             self.driver.accept_untrusted_certs = True
             self.driver.assume_untrusted_cert_issuer = True
             self.driver.get(core_link)
-            #self.driver.refresh()
+            # self.driver.refresh()
         except Exception:
             print Exception
 
@@ -82,8 +81,8 @@ class WebAgent(object):
         try:
             WebDriverWait(self.driver, 10).until(EC.alert_is_present())
             asd = self.driver.switch_to_alert()
-            asd.send_keys("Administrator")
-            asd.send_keys(Keys.TAB + '123asdQ')
+            asd.send_keys(core_login)
+            asd.send_keys(Keys.TAB + core_password)
             asd.accept()
             print("Core UI is open")
             if self.driver.current_url is not core_link:
@@ -1018,7 +1017,7 @@ class WebAgent(object):
 
         print("Working here")
 
-        status = self.execute(cmd=status_vm)[0][0]
+        status = self.execute.execute(cmd=status_vm)[0][0]
 
         status = status.split()[0]
 
@@ -1028,19 +1027,19 @@ class WebAgent(object):
             # Sometimes machine appears to be aborted. To avoid this,
             # we use restore to the snapshot.
             if "aborted" in status:
-                self.execute(cmd=restore_snap)
+                self.execute.execute(cmd=restore_snap)
                 print("Snapshot restored")
                 time.sleep(5)
             if "powered" in status:
-                self.execute(cmd=boot_vm_dvd)
+                self.execute.execute(cmd=boot_vm_dvd)
                 time.sleep(10)
                 print("LiveDVD machine is configured to boot from LiveDVD")
 
-                self.execute(cmd=restore_snap)
+                self.execute.execute(cmd=restore_snap)
                 print("Snapshot restored")
                 time.sleep(5)
 
-            self.execute(cmd=start_vm)
+            self.execute.execute(cmd=start_vm)
             time.sleep(5)
             print("LiveDVD machine booting from the dvd")
 
@@ -1306,70 +1305,70 @@ class WebAgent(object):
 
         print('VBOX export is started.......')
 
-    def export_vbox_bootable2(self, ip_machine, vbox_export_vmname):
-
-        self.vmname = vbox_export_vmname
-        self.ip = ip_machine
-        self.ip_cd = ip_livecd
-        self.pass_cd = pass_livecd
-        self.bootability = None
-
-
-        # poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
-        # start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
-        # boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
-        # boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
-        # restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
-        # status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
-        # clean_dvd = "sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive"
-        # check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
-        try:
-
-            find_ip_exported_vm = "vboxmanage guestproperty enumerate " + self.vmname + " | grep 'IP' | awk '{print $4}' | cut -f1 -d ','"
-
-            start_exported_vm = "vboxmanage startvm " + self.vmname
-
-            modify_exported_vm = "vboxmanage modifyvm " + self.vmname + " --nic2 bridged --bridgeadapter2 enp3s0 --nictype2 82540EM --macaddress2 080027C4C399 --cableconnected2 on"
-
-            self.execute(cmd=modify_exported_vm)
-            self.execute(cmd=start_exported_vm)
-            ip = self.execute(cmd=find_ip_exported_vm)[0][0]
-            counter = 0
-            while not ip and counter < 20:
-                time.sleep(5)
-                counter = counter + 1
-                ip = self.execute(cmd=find_ip_exported_vm)[0][0]
-
-            test_connection = "ping -c 1 " + ip
-
-            if ip:
-                # print self.error_code_unix_command(cmd=test_connection)
-                # print "=============="
-                if self.error_code_unix_command(cmd=test_connection) is not 0:
-                    print "The IP is: %s" % ip
-                    print "The error code is: %s" % self.error_code_unix_command(cmd=test_connection)
-                    raise Exception("The ping to the exported machine is not etablished, assume something is wrong with the export")
-            else:
-                print "The IP is: %s" % ip
-                print "The error code is: %s" % self.error_code_unix_command(
-                    cmd=test_connection)
-                raise Exception("The IP for the exported machine is not received yet. Please investigate")
-            print "COMPLETED EXPORT BOOTABLE"
-        # except:
-        #     pass
-
-        finally:
-            poweroff_exported_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
-            unregister_exported_vm = "vboxmanage unregistervm " + self.vmname + " --delete"
-            remove_exported_from_disk = "sudo rm -rf /home/mbugaiov/Music/" + self.vmname
-            self.execute(cmd=poweroff_exported_vm)
-            time.sleep(10)
-
-            self.execute(cmd=unregister_exported_vm)
-            time.sleep(5)
-
-            self.execute(cmd=remove_exported_from_disk)
-            print("Competed cleanup")
+    # def export_vbox_bootable2(self, ip_machine, vbox_export_vmname):
+    #
+    #     self.vmname = vbox_export_vmname
+    #     self.ip = ip_machine
+    #     self.ip_cd = ip_livecd
+    #     self.pass_cd = pass_livecd
+    #     self.bootability = None
+    #
+    #
+    #     # poweroff_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+    #     # start_vm = "vboxmanage startvm " + self.vmname + " --type gui"
+    #     # boot_vm_dvd = "vboxmanage modifyvm " + self.vmname + " --boot1 dvd"
+    #     # boot_vm_disk = "vboxmanage modifyvm " + self.vmname + " --boot1 disk"
+    #     # restore_snap = "vboxmanage snapshot " + self.vmname + " restore clear"
+    #     # status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+    #     # clean_dvd = "sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive"
+    #     # check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
+    #     try:
+    #
+    #         find_ip_exported_vm = "vboxmanage guestproperty enumerate " + self.vmname + " | grep 'IP' | awk '{print $4}' | cut -f1 -d ','"
+    #
+    #         start_exported_vm = "vboxmanage startvm " + self.vmname
+    #
+    #         modify_exported_vm = "vboxmanage modifyvm " + self.vmname + " --nic2 bridged --bridgeadapter2 enp3s0 --nictype2 82540EM --macaddress2 080027C4C399 --cableconnected2 on"
+    #
+    #         self.execute(cmd=modify_exported_vm)
+    #         self.execute(cmd=start_exported_vm)
+    #         ip = self.execute(cmd=find_ip_exported_vm)[0][0]
+    #         counter = 0
+    #         while not ip and counter < 20:
+    #             time.sleep(5)
+    #             counter = counter + 1
+    #             ip = self.execute(cmd=find_ip_exported_vm)[0][0]
+    #
+    #         test_connection = "ping -c 1 " + ip
+    #
+    #         if ip:
+    #             # print self.error_code_unix_command(cmd=test_connection)
+    #             # print "=============="
+    #             if self.execute.error_code_unix_command(cmd=test_connection) is not 0:
+    #                 print "The IP is: %s" % ip
+    #                 print "The error code is: %s" % self.error_code_unix_command(cmd=test_connection)
+    #                 raise Exception("The ping to the exported machine is not etablished, assume something is wrong with the export")
+    #         else:
+    #             print "The IP is: %s" % ip
+    #             print "The error code is: %s" % self.error_code_unix_command(
+    #                 cmd=test_connection)
+    #             raise Exception("The IP for the exported machine is not received yet. Please investigate")
+    #         print "COMPLETED EXPORT BOOTABLE"
+    #     # except:
+    #     #     pass
+    #
+    #     finally:
+    #         poweroff_exported_vm = "vboxmanage controlvm " + self.vmname + " poweroff"
+    #         unregister_exported_vm = "vboxmanage unregistervm " + self.vmname + " --delete"
+    #         remove_exported_from_disk = "sudo rm -rf /home/mbugaiov/Music/" + self.vmname
+    #         self.execute(cmd=poweroff_exported_vm)
+    #         time.sleep(10)
+    #
+    #         self.execute(cmd=unregister_exported_vm)
+    #         time.sleep(5)
+    #
+    #         self.execute(cmd=remove_exported_from_disk)
+    #         print("Competed cleanup")
 
     def export_vbox_bootable(self, ip_machine, vbox_export_vmname):
 
@@ -1407,39 +1406,39 @@ class WebAgent(object):
             print("Competed cleanup")
 
 
-    def error_code_unix_command(self, cmd=None):
-        # type: (object) -> object
-        if cmd is not None:
-            self.cmd = cmd
-        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
-                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        #((output, err), code)
-        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
-        # print("OUT=", output)
-        #print(output)
-        # p.stdin.write("Y\n")
-        p_status = p.wait()
-        #error_code = p.communicate()[0]
-        return (p.poll())
-
-    def execute(self, cmd=None):
-        # type: (object) -> object
-        if cmd is not None:
-            self.cmd = cmd
-        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
-                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        #((output, err), code)
-        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
-        # print("OUT=", output)
-        # print(output)
-        # print(err)
-        # p.stdin.write("Y\n")
-        p_status = p.wait()
-        #error_code = p.communicate()[0]
-        if err not in (0, 100):
-            raise Exception("Exception: '%s' command finished with error code %d" %(self.cmd, err))
-        else:
-            return (output, err)
+    # def error_code_unix_command(self, cmd=None):
+    #     # type: (object) -> object
+    #     if cmd is not None:
+    #         self.cmd = cmd
+    #     p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+    #                          stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    #     #((output, err), code)
+    #     (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+    #     # print("OUT=", output)
+    #     #print(output)
+    #     # p.stdin.write("Y\n")
+    #     p_status = p.wait()
+    #     #error_code = p.communicate()[0]
+    #     return (p.poll())
+    #
+    # def execute(self, cmd=None):
+    #     # type: (object) -> object
+    #     if cmd is not None:
+    #         self.cmd = cmd
+    #     p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+    #                          stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    #     #((output, err), code)
+    #     (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+    #     # print("OUT=", output)
+    #     # print(output)
+    #     # print(err)
+    #     # p.stdin.write("Y\n")
+    #     p_status = p.wait()
+    #     #error_code = p.communicate()[0]
+    #     if err not in (0, 100):
+    #         raise Exception("Exception: '%s' command finished with error code %d" %(self.cmd, err))
+    #     else:
+    #         return (output, err)
 
     def prepare_livedvd(self):
         download_link = "wget https://raw.github.com/mbugaiov/myrepo/master/Livedvd_download.sh"
@@ -1478,7 +1477,7 @@ class WebAgent(object):
         check_dvd_port = "sudo vboxmanage showvminfo livedvd | grep .iso"
 
         try:
-            status = self.execute(cmd=status_vm)[0][0]
+            status = self.execute.execute(cmd=status_vm)[0][0]
             if "running" in status:
                 self.virtualbox.poweroff_vm(vmname=self.vmname)
                 time.sleep(10)
@@ -1488,6 +1487,11 @@ class WebAgent(object):
             self.virtualbox.clean_dvd_vm(vmname=self.vmname)
             time.sleep(5)
             print('The firmware of the machine is: %s' % self.firmware)
+
+            '''Configuring EFI firmware in case if source machine is EFI'''
+            if self.firmware is "EFI":
+                self.virtualbox.set_firmware_vm(vmname=self.vmname, firmware="efi")
+
             self.virtualbox.start_vm(vmname=self.vmname)
             print("Machine started")
 

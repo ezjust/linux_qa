@@ -96,3 +96,8 @@ class Virtualbox(object):
     def clean_dvd_vm(self, vmname):
         self.vmname = vmname
         self.execute.execute(cmd="sudo vboxmanage storageattach livedvd --storagectl " + "IDE " + "--port 1 --device 0 --type dvddrive --medium " + "emptydrive")
+
+    def set_firmware_vm(self, vmname, firmware):
+        self.vmname = vmname
+        self.firmware = firmware
+        self.execute.execute(cmd="sudo vboxmanage modifyvm " + self.vmname + " --firmware " + self.firmware)
