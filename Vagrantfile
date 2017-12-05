@@ -34,19 +34,28 @@ Vagrant.configure("2") do |config|
 
   end
 
-  
-  config.vm.define "efi" do |efi|
-    efi.vm.box = "poad/ubuntu-zesty-desktop"
-    efi.vm.box_version = "0.0.1"
+  config.vm.define "centos_74_x64" do |centos_74|
+    centos_74.vm.box = "/var/lib/boxes/centos_74_x64.box"
+    centos_74.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    centos_74.ssh.username = "vagrant"
+    centos_74.ssh.password = "vagrant"
+  end 
+
+  config.vm.define "ubuntu_17.04_efi" do |efi|
+    efi.vm.box = "/var/lib/boxes/ubuntu_17.04_efi.box"
+    efi.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    efi.ssh.username = "vagrant"
+    efi.ssh.password = "vagrant"
   end
-  config.vm.define "centos_7_x64" do |centos7|
-    centos7.vm.box = "/home/mbugaiov/Documents/boxes/centos_7_x64.box"
+ 
+  config.vm.define "centos_73_x64" do |centos7|
+    centos7.vm.box = "/var/lib/boxes/centos_7_x64.box"
     centos7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos7.ssh.username = "vagrant"
     centos7.ssh.password = "vagrant"
   end
   config.vm.define "sles_12_x64" do |sles12|
-    sles12.vm.box = "/home/mbugaiov/Documents/boxes/sles_12_x64.box"
+    sles12.vm.box = "/var/lib/boxes/sles_12_x64.box"
     sles12.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sles12.ssh.username = "vagrant"
     sles12.ssh.password = "vagrant"
@@ -57,39 +66,39 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define "debian_9_x64" do |debian9|
-    debian9.vm.box = "/home/mbugaiov/Documents/boxes/debian_9_x64.box"
+    debian9.vm.box = "/var/lib/boxes/debian_9_x64.box"
     debian9.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     debian9.ssh.username = "vagrant"
     debian9.ssh.password = "vagrant"
   end
 
   config.vm.define "sl_7_x64" do |sl7|
-    sl7.vm.box = "/home/mbugaiov/Documents/boxes/sl_7_x64.box"
+    sl7.vm.box = "/var/lib/boxes/sl_7_x64.box"
     sl7.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sl7.ssh.username = "vagrant"
     sl7.ssh.password = "vagrant"
   end
 
   config.vm.define "sles_11_x64" do |sles11|
-    sles11.vm.box = "/home/mbugaiov/Documents/boxes/sles_12_x64.box"
+    sles11.vm.box = "/var/lib/boxes/sles_11_x64.box"
     sles11.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     sles11.ssh.username = "vagrant"
     sles11.ssh.password = "vagrant"
   end
   config.vm.define "centos_6_x64" do |centos664|
-    centos664.vm.box = "/home/mbugaiov/Documents/boxes/centos_6_x64.box"
+    centos664.vm.box = "/var/lib/boxes/centos_6_x64.box"
     centos664.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos664.ssh.username = "vagrant"
     centos664.ssh.password = "vagrant"
   end
 
   config.vm.define "centos_6_x32" do |centos632|
-    centos632.vm.box = "/var/lib/our_data/boxes/centos_6_x32.box"
+    centos632.vm.box = "/var/lib/boxes/centos_6_x32.box"
     centos632.ssh.username = "vagrant"
     centos632.ssh.password = "vagrant"
   end
   config.vm.define "ubuntu_16.04_x64" do |ubuntu1604|
-    ubuntu1604.vm.box = "/home/mbugaiov/Documents/boxes/ubuntu_16.04_x64.box"
+    ubuntu1604.vm.box = "/var/lib/boxes/ubuntu_16.04_x64.box"
     ubuntu1604.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     ubuntu1604.ssh.username = "vagrant"
     ubuntu1604.ssh.password = "vagrant"
@@ -125,7 +134,7 @@ Vagrant.configure("2") do |config|
     ubuntu120464.ssh.password = "vagrant"
   end
   config.vm.define "debian_8_x64" do |debian864|
-    debian864.vm.box = "/home/mbugaiov/Documents/boxes/debian_8_x64.box"
+    debian864.vm.box = "/var/lib/boxes/debian_8_x64.box"
     debian864.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     debian864.ssh.username = "vagrant"
     debian864.ssh.password = "vagrant"
@@ -136,7 +145,7 @@ Vagrant.configure("2") do |config|
     debian732.ssh.password = "vagrant"
   end
   config.vm.define "livecd" do |live|
-    live.vm.box = "/home/mbugaiov/Documents/git/linux_qa/livecd.box"
+    live.vm.box = "/var/lib/livecd.box"
     live.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     live.ssh.forward_x11 = true
     live.ssh.username = "vagrant"
