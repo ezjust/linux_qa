@@ -179,7 +179,7 @@ class VagrantAutomation(object):
                         sudo(
                         'wget https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
                         sudo('chmod +x ./agent_install.sh')
-                        sudo('./agent_install.sh --install ' + self.build_agent,
+                        sudo('./agent_install.sh --install --branch=' + self.build_agent,
                          stdout=installation_agent_log)
                         #ipaddr = sudo(
                         #"ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
