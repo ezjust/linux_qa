@@ -19,7 +19,12 @@ class InstallAgent(Repoinstall, SystemUtils):
     def runTest(self):
         # print("Start")
         if self.check_initd() == 'systemctl':
-            if self.install_distname() in ["ubuntu", "debian", "sles"]:
+            if self.install_distname() in ["ubuntu", "debian", "sles"] and self.version() not in ["17.04", "17.10"]:
+
+                '''
+                There is difference in error code for the not-installed service in 17.04 and 16.04. 17.04 return error code 4, 16.04 return error code 3
+                '''
+
                 self.status_of_the_service('rapidrecovery-agent' , 3) #error code 3 is received when service is not istalled
             else:
                 self.status_of_the_service('rapidrecovery-agent' , 4) #error code 3 is received when service is not istalled

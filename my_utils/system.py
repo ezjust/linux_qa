@@ -463,10 +463,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
 
     def check_initd(self):
-        '''127 error code is recevied for systemc --v on the init systems'''
+        '''127 error code is recevied for systemctl --version on the init systems'''
         execute = Executor()
         a = Repoinstall()
-        command = 'systemctl --v'
+        command = 'systemctl --version'
         if 127 is a.execute.error_code(command):
             return '/etc/init.d'
         else:
@@ -509,10 +509,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         self.cmd = cmd
         self.action = action
         if a.check_initd() == 'systemctl':
-            command = 'systemctl %s %s' % (self.action, self.cmd)
+            command = 'sudo systemctl %s %s' % (self.action, self.cmd)
             self.execute.execute(command)
         elif a.check_initd() == '/etc/init.d':
-            command = '/etc/init.d/%s %s' % (self.cmd, self.action)
+            command = 'sudo /etc/init.d/%s %s' % (self.cmd, self.action)
             self.execute.execute(command)
         else:
             raise Exception("failed to start service!")
