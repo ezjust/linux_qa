@@ -165,6 +165,7 @@ class WebAgent(object):
 
         except IndexError:
             self.last_job_attr = 'null'
+            print("in find_last_job_id_exeption")
 
         return self.last_job_attr
 
@@ -238,15 +239,28 @@ class WebAgent(object):
             next.click()
 
             WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.XPATH, ".//*[@id='hostName']")))
+            if build_agent == '7.1.0': #the UI is differ in the 7.1.0 and 7.0.0 versions. Because of this we ned to use different path for the elements in 7.0.0 and 7.1.0
+                hostname = self.driver.find_element_by_xpath(
+                    ".//*[@id='hostName']")
+                hostname.send_keys(self.ip_machine)
 
-            hostname = self.driver.find_element_by_xpath(".//*[@id='hostName']")
-            hostname.send_keys(self.ip_machine)
+                usernm = self.driver.find_element_by_xpath(
+                    ".//*[@id='dropdown-visual-input-userName']")
+                usernm.send_keys(self.username)
 
-            usernm = self.driver.find_element_by_xpath(".//*[@id='userName']")
-            usernm.send_keys(self.username)
+                passwd = self.driver.find_element_by_xpath(
+                    ".//*[@id='password']")
+                passwd.send_keys(self.password)
 
-            passwd = self.driver.find_element_by_xpath(".//*[@id='password']")
-            passwd.send_keys(self.password)
+            else:
+                hostname = self.driver.find_element_by_xpath(".//*[@id='hostName']")
+                hostname.send_keys(self.ip_machine)
+
+                usernm = self.driver.find_element_by_xpath(".//*[@id='userName']")
+                usernm.send_keys(self.username)
+
+                passwd = self.driver.find_element_by_xpath(".//*[@id='password']")
+                passwd.send_keys(self.password)
 
             next = self.driver.find_element_by_xpath(".//*[@id='btnWizardDefault']")
             next.click()
@@ -599,8 +613,12 @@ class WebAgent(object):
         #"--------------------------------------------------------------------------")
         #print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz')
         #print(list_id[0])
-        substring = soup.find_all("tr", {"id": list_id[0]})
-        #print(substring)
+        try:
+            substring = soup.find_all("tr", {"id": list_id[0]})
+            #print(substring)
+        except IndexError:
+            stat = {}
+            return stat
         #print('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzsd')
         value = re.findall('value=".*?"', str(substring))
         value = value[2].split(" ", 1)
@@ -634,39 +652,40 @@ class WebAgent(object):
                 value = value[1].split(" ", 1)
                 value = value[0].split('value="', 1)[1]
 
-            # print(value)
+            #print(value)
             title = re.findall('title=".*?"', str(substring))
-            # print title
-            # print('134')
+            #print title
+            #print('134')
             if build_agent == '7.0.0':
-                # print "Build agent is 7.0.0"
+                #print "Build agent is 7.0.0"
                 title = title[0].split('"', 1)                                 #7.0.0 title: ['title=', 'Succeeded"']
                                                                                #7.1.0 title: ['Succeeded', '']
 
-                # print("7.0.0 title: %s" % title)
-                # print("7.1.0 title: %s" % title[1].split('"', 1))
+                #print("7.0.0 title: %s" % title)
+                #print("7.1.0 title: %s" % title[1].split('"', 1))
             else:
-                # print "Build agent is 7.1.0"
+                #print "Build agent is 7.1.0"
                 title = title[1].split('"', 1)   # was title[0] before. Is not working now.
                                              # Fix is tested on the 7.1.0
 
-            # print title
+            #print title
             #print('2')
             title = title[1][0:(len(title[1]) - 1)]
             #print title
             #print('3')
             if len(title) > 20:
-                # print("I am here")
+                #print("I am here")
                 if " of " in title:
-                    # print("Gottcha")
+                    #print("Gottcha")
                     title = "In Progress"
             #print(title)
             instert(id=list_id[i], value=value, result=title, dict=stat)
 
-        # print(stat)
+        #print(stat)
         #pp = pprint.PrettyPrinter(indent=4)
         #pp.pprint(stat)
         #print("list_events_completed")
+        #print "Complete generate events"
         return stat
 
     def core_events(self, ip_machine):
