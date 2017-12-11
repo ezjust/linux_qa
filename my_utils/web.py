@@ -1313,12 +1313,27 @@ class WebAgent(object):
                 self.driver.find_element_by_id('exportVolumeMappingGrid_selectAll_triSpan').click()
                 self.driver.find_element_by_id("btnWizardDefault").click()
                 #new_page Warnings
-
                 self.wait_for_element_invisible("lpLoadingContent")
+                WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "wizardContentContainer")))
+                warning = self.driver.find_element_by_id("wizardContentContainer")
+                while "While the VM export is in progress" not in warning.text:
+                    warning = self.driver.find_element_by_id(
+                        "wizardContentContainer")
+                    time.sleep(1)
+                    #print("I am here in loop")
                 WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "btnWizardDefault")))
-                self.driver.find_element_by_id("btnWizardDefault").click()
-                print("I have adjusted all export tasks")
+                print self.driver.find_element_by_id("btnWizardDefault").text
+                while self.driver.find_element_by_id("btnWizardDefault").text not in "Finish":
+                    print self.driver.find_element_by_id("btnWizardDefault").text
+                    time.sleep(1)
+                if self.driver.find_element_by_id("btnWizardDefault").text in "Finish":
+                    self.driver.find_element_by_id("btnWizardDefault").click()
+                    self.wait_for_element_invisible("lpLoadingContent")
+                else:
+                    print self.driver.find_element_by_id("btnWizardDefault").text
+                    raise Exception
                 break
+
 
 
 
