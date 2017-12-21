@@ -1,5 +1,6 @@
 from __future__ import print_function, with_statement
 from web_runner import *
+from my_utils.system import SystemUtils
 import vagrant
 from fabric.api import *
 from fabric.network import disconnect_all
@@ -9,6 +10,7 @@ import tarfile
 import ConfigParser
 import time
 import subprocess
+# from my_utils.web import WebAgent
 
 
 log_cm = vagrant.make_file_cm('deployment.log')
@@ -21,14 +23,13 @@ config = work_path + "/cfg/vagrant_up.ini"
 config_web = work_path + "config.ini"
 
 
-class VagrantAutomation(object):
+class VagrantAutomation(SystemUtils, TestRunner):
     box_distro_name = None
     os_list = []
     __logDir = 'Logs'
     box_log = '/box.log'
     box_log_object = None
     env.password = "vagrant"
-
 
     def write_cfg(self, ipaddr, **kwargs):
         config = ConfigParser.ConfigParser()
@@ -93,7 +94,7 @@ class VagrantAutomation(object):
                 v.up(vm_name=self.box_distro_name)
             #TestRunner().open_log()
 
-            TestRunner().write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
+            self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
 
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
                 try:
@@ -195,7 +196,14 @@ class VagrantAutomation(object):
 
                 if self.destroy_vm:
                     print("destroing")
-                    v.destroy(vm_name=self.box_distro_name)
+                    try:
+                        v.destroy(vm_name=self.box_distro_name)
+                    except Exception as e:
+                        print(e)
+                        disconnect_all()
+                        v.destroy(vm_name=self.box_distro_name)
+                        pass
+
                 print("------------------------------------------------------------------------------------------------------------------"
                       "\n"
                       "\n"
@@ -205,6 +213,7 @@ class VagrantAutomation(object):
 
     def open_box_log(self):
         self.box_log_object = open(self.__logDir + VagrantAutomation.box_log, 'a')
+        global TEST_VAR
 
     def clean_box_log(self):
         if os.path.isfile(self.__logDir + VagrantAutomation.box_log):
@@ -241,6 +250,17 @@ class VagrantAutomation(object):
     def remove_archive(self):
         os.remove(work_path + tar_name)
 
+    def save_vmname(self, vm=None, **kwargs):
+        if vm is not None:
+            config = ConfigParser.ConfigParser()
+            config.optionxform = str
+            config.readfp(open(config_web))
+            config.set('web', 'os', vm)
+            with open(config_web, 'w') as configfile:
+                config.write(configfile)
+
+
+
 
 if __name__ == '__main__':
 
@@ -250,9 +270,11 @@ if __name__ == '__main__':
     start.clean_installation_agent_log()
     start.clean_configuration_log()
     start.open_box_log()
-    TestRunner().remove_log() # remove log with the results of the execution tests.
+    start.remove_log()
 
     for vm in start.os_list:
+        print("VM NAME = ", vm)
+        start.save_vmname(vm=vm)
         print(vm + " : executing....")
         start.write_in_box_log(vm + " tests are comleted:" + '\n')
         start.read_cfg(box_distro_name=vm)
@@ -267,6 +289,6 @@ if __name__ == '__main__':
         for line in f:
             print(line)
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    TestRunner().close_log()
+    start.close_log()
 
 

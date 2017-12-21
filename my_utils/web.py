@@ -1,5 +1,6 @@
 from virtualbox import Virtualbox
 from system import Executor
+from system import SystemUtils
 import traceback
 import os
 import selenium
@@ -19,6 +20,7 @@ import re
 import urllib
 import datetime
 import sys
+from vagrant_up import VagrantAutomation
 # driver.implicitly_wait(10) # seconds
 
 work_path = os.path.abspath('.') + '/'  # Returns current directory, where script is run.
@@ -46,10 +48,11 @@ def read_cfg():
     auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
     bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
     force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
-    return ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname
+    os_name = cp.get('web', 'os')
+    return ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname,os_name
 
 
-ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname, os_name = read_cfg()
 
 
 class WebAgent(object):
@@ -178,6 +181,7 @@ class WebAgent(object):
         self.ip_machine = ip_machine
         self.username = username
         self.password = password
+        timeout = False
         agent_link = None
         id = None
 
@@ -283,6 +287,7 @@ class WebAgent(object):
                     #print(upgrade.text)
                     next_button = self.driver.find_element_by_id("btnWizardDefault")
                     next_button.click()
+                    timeout = True # multiplicator for the timeout
             #print(datetime.datetime.now().time())
 
             time.sleep(2)
@@ -308,7 +313,11 @@ class WebAgent(object):
                         counter = counter + 1
                         #print("Waiting for Display name:")
                        # print(text)
-                        time.sleep(5)
+                        if timeout:
+                            time.sleep(15)
+                            print("Deploy timeout is applied")
+                        else:
+                            time.sleep(5)
                         WebDriverWait(self.driver, self.short_timeout).until(
                             EC.visibility_of_element_located(
                                 (By.CLASS_NAME, "control-label")))
@@ -341,7 +350,11 @@ class WebAgent(object):
             counter = 0
             while self.find_machine_link(self.ip_machine) is None and counter < 60:
                 print("waiting protected machine to appear")
-                time.sleep(5)
+                if timeout:
+                    time.sleep(15)
+                    print("Deploy timeout is applied")
+                else:
+                    time.sleep(5)
                 counter = counter + 1
 
             #print("asd")
@@ -1493,6 +1506,24 @@ class WebAgent(object):
         cd_down = "cd .."
         remove = "rm -rf squashfs-temp/"
 
+    def bmr_fix_boot(self, ip_machine, ip_livecd, pass_livecd, vbox_vmname):
+        self.vmname = vbox_vmname
+        self.ip = ip_machine
+        self.ip_cd = ip_livecd
+        self.pass_cd = pass_livecd
+        self.bootability = None
+        status_vm = "vboxmanage showvminfo " + self.vmname + " | grep State: | awk '{print $2}'"
+        try:
+            status = self.execute.execute(cmd=status_vm)[0][0]
+            if "running" in status:
+                lsblk = self.execute.ssh_execution(SSH_ADDRESS=self.ip_cd, SSH_USERNAME='username', SSH_PASSWORD=self.pass_cd, SSH_COMMAND='lsblk')
+                list_fix_boot =  self.execute.ssh_execution(SSH_ADDRESS=self.ip_cd, SSH_USERNAME='username', SSH_PASSWORD=self.pass_cd, SSH_COMMAND='ls -la /opt/apprecovery/scripts')
+                # print lsblk
+                # print list_fix_boot
+                #print running_vm
+                print(os_name)
+        except Exception as e:
+            print "BMR_FIX_BOOT_EXEPTION: {0}".format(e)
 
     def bmr_bootable(self, ip_machine, ip_livecd, pass_livecd, vbox_vmname):
         self.vmname = vbox_vmname

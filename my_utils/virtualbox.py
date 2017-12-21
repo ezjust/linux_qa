@@ -19,6 +19,7 @@ class Virtualbox(object):
 
         except Exception:
             ip = None
+            print('None')
 
         counter = 0
         while not ip and counter < 60:
@@ -28,8 +29,15 @@ class Virtualbox(object):
                 ip = self.execute.execute(
                     cmd="vboxmanage guestproperty enumerate " + self.vmname + " | grep 'IP' | awk '{print $4}' | cut -f1 -d ','")[
                     0][0]
+                print('None1')
             except IndexError:
+                ip = None
+                print('None2')
                 pass
+
+        if not ip:
+            ip = None
+            print('IP is NONE')
 
         return ip
 

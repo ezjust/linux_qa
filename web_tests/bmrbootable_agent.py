@@ -4,6 +4,7 @@ import os
 sys.path.append(os.path.abspath('.'))
 from my_utils.web import *
 
+
 class BmrbootableAgent(WebAgent):
 
     link = None
@@ -22,5 +23,6 @@ class BmrbootableAgent(WebAgent):
         self.status(ip_machine)
         self.auto_bmr(ip_machine, vbox_vmname, ip_livecd, pass_livecd)
         self.status(ip_machine)
+        self.bmr_fix_boot(ip_machine, ip_livecd, pass_livecd, vbox_vmname)
         self.bmr_bootable(ip_machine, ip_livecd, pass_livecd, vbox_vmname)
 

@@ -6,12 +6,15 @@ import time
 import errno
 from datetime import datetime
 import ConfigParser
+import sys
+import paramiko
 
 
 
 class SystemUtils(object):
     #distname = None
     #version = None
+    vm_name_test = None
 
     def __init__(self):
         pass
@@ -32,6 +35,13 @@ class SystemUtils(object):
     def version(self):
         ver = platform.linux_distribution()[1]
         return ver
+
+    def set_vmname(self, vm_name):
+        self.vm_name_test = vm_name
+        print('There is accept_vm function and the OS is: %s' % self.vm_name_test)
+
+    def get_vmname(self):
+        return self.vm_name_test
 
 
 
@@ -55,9 +65,6 @@ class Executor(object):
             cls.__logFile = open(cls.__logDir + "/Log-%s.log" % start_log_time,
                                  "w+")
         return cls.__instance
-
-
-
 
     def package_manager(self):
 
@@ -166,7 +173,28 @@ class Executor(object):
         self.__logFile.flush()
 
 
+    def ssh_execution(self, SSH_ADDRESS, SSH_USERNAME, SSH_PASSWORD, SSH_COMMAND):
+        SSH_ADDRESS = SSH_ADDRESS
+        SSH_USERNAME = SSH_USERNAME
+        SSH_PASSWORD = SSH_PASSWORD
+        SSH_COMMAND = SSH_COMMAND
 
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        ssh_stdin = ssh_stdout = ssh_stderr = None
+
+        try:
+            ssh.connect(SSH_ADDRESS, username=SSH_USERNAME,
+                        password=SSH_PASSWORD)
+            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(SSH_COMMAND)
+        except Exception as e:
+            sys.stderr.write("SSH connection error: {0}".format(e))
+
+        if ssh_stdout:
+            sys.stdout.write(ssh_stdout.read())
+        if ssh_stderr:
+            sys.stderr.write(ssh_stderr.read())
 
 
 
@@ -489,7 +517,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                     raise Exception("INITD: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
             #return self.execute.error_code(command)
         else:
-            raise Exception("Pizdec!")
+            raise Exception("ERROR in status of the service for the %s" % self.cmd)
 
     def error_code_of_the_service(self, cmd):
         a = Repoinstall()
