@@ -112,6 +112,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                             sudo(stderr=False, command='kill -9 ' + result_clean)
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+                        sudo('pip install ' + self.pip_packages,
+                             stdout=configuration_log)
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
                         # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
                         # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
@@ -139,6 +141,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
                         #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
                         sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
+                        sudo('pip install ' + self.pip_packages,
+                             stdout=configuration_log)
 
 
                     sudo('uname -r')
