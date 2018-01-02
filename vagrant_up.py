@@ -174,7 +174,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     if self.run_configurator:
                         sudo('wget https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
                         sudo('chmod +x ./configurator.sh')
-                        sudo('./configurator.sh --create /dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
+                        sudo('./configurator.sh --install --disk=/dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
                         run('lsblk')
                     if self.install_agent:
                         sudo(
@@ -182,15 +182,23 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         sudo('chmod +x ./agent_install.sh')
                         sudo('./agent_install.sh --install --branch=' + self.build_agent,
                          stdout=installation_agent_log)
-                        #ipaddr = sudo(
-                        #"ifconfig | grep '10.10' | awk '{print $2}' | sed 's/.*://'")
-                        ipaddr = sudo("ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
-                        self.write_cfg(ipaddr=ipaddr)
-                    time.sleep(5)
-                    os.system("sudo /usr/bin/python2.7 web_runner.py")
-
-                print("Testing is completed")
-
+                        try:
+                            ipaddr = sudo("ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
+                            counter = 0
+                            while "10.10." not in ipaddr and counter < 10:
+                                time.sleep(5)
+                                ipaddr = sudo(
+                                    "ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
+                                counter = counter + 1
+                            if "10.10." not in ipaddr:
+                                raise Exception('Failed to determine IP of the vagrant machine')
+                            else:
+                                self.write_cfg(ipaddr=ipaddr)
+                                time.sleep(5)
+                                os.system("sudo /usr/bin/python2.7 web_runner.py")
+                                print("Testing is completed")
+                        except Exception:
+                            pass
 
             finally:
 
