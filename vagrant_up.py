@@ -90,6 +90,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
             try:
                 v.up(vm_name=self.box_distro_name)
             except Exception:
+                v.destroy(vm_name=None)
                 time.sleep(60)
                 v.up(vm_name=self.box_distro_name)
             #TestRunner().open_log()
