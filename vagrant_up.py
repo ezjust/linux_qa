@@ -91,18 +91,19 @@ class VagrantAutomation(SystemUtils, TestRunner):
                 v.up(vm_name=self.box_distro_name)
             except Exception as E:
                 print(E)
-                list = run(command="echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`")
+                command = "echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`"
+                list = str(self.execute(cmd=command)) # get the list ofd the used virtualbox machines by the pid
                 if len(list) is not 0:
                     for i in list.splitlines():
-                        sudo(command='sudo kill -9 ' + i)
+                        self.execute(cmd='sudo kill -9 ' + i) # kill of the pids - releted to the virtualbox machine. May affect not only Vagrant boxes.
                 try:
-                    v.destroy()
+                    v.destroy() # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
                 except Exception:
                     pass
 
                 print('I am in Exception')
                 time.sleep(5)
-                v.up(vm_name=self.box_distro_name)
+                v.up(vm_name=self.box_distro_name) # new try to up Vagrant machine.
             #TestRunner().open_log()
 
             self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
