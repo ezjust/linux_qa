@@ -89,9 +89,19 @@ class VagrantAutomation(SystemUtils, TestRunner):
         if self.vagrant_up:
             try:
                 v.up(vm_name=self.box_distro_name)
-            except Exception:
-                v.destroy(vm_name=None)
-                time.sleep(60)
+            except Exception as E:
+                print(E)
+                list = run(command="echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`")
+                if len(list) is not 0:
+                    for i in list.splitlines():
+                        sudo(command='sudo kill -9 ' + i)
+                try:
+                    v.destroy()
+                except Exception:
+                    pass
+
+                print('I am in Exception')
+                time.sleep(5)
                 v.up(vm_name=self.box_distro_name)
             #TestRunner().open_log()
 
