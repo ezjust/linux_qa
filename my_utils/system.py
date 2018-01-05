@@ -144,11 +144,15 @@ class Executor(object):
         p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
                              stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         #((output, err), code)
-        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+        p.wait()
+        #(output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
         # print("OUT=", output)
-        #print(output)
+        # print(output)
+        # print("ERR=", p.poll())
+        # print("PPOLL=", p.poll())
+        # print p.poll()
         # p.stdin.write("Y\n")
-        p_status = p.wait()
+        #_status = p.wait()
         #error_code = p.communicate()[0]
         return (p.poll())
 
@@ -509,13 +513,15 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             if self.code is not None:
                 if self.execute.error_code(command) is not self.code:
                     raise Exception("SYSTEMCTL: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
-            #return self.execute.error_code(command)
+            else:
+                return self.execute.error_code(command)
         elif a.check_initd() == '/etc/init.d':
             command = '/etc/init.d/%s status'% self.cmd
             if self.code is not None:
                 if self.execute.error_code(command) is not self.code:
                     raise Exception("INITD: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
-            #return self.execute.error_code(command)
+            else:
+                return self.execute.error_code(command)
         else:
             raise Exception("ERROR in status of the service for the %s" % self.cmd)
 
@@ -569,10 +575,20 @@ class Agent(Repoinstall):
                 raise Exception("%s : File exists. This is error, it should not be existed." % self.file)
 
     def check_agent_is_running(self):
+        """Once agent is restarted, there should be process listening the port for the connection.
+        The Exception will be received in case if after service restart the process is not listening the port."""
         if self.status_of_the_service('rapidrecovery-agent', None) is not 0:
             self.service_activity('rapidrecovery-agent', 'restart')
             self.status_of_the_service('rapidrecovery-agent', 0)
-            print("I am in servicce agent is running. Agent should be running now.")
+
+            counter = 0
+            while self.execute.error_code('netstat -anp | grep mono') is not 0 and counter < 20:
+                time.sleep(0.5)
+                counter = counter + 1
+
+            if self.execute.error_code('netstat -anp | grep mono') is not 0:
+                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 5 sec did not help. Please investigate.")
+
 
     def bsctl_hash(self):
         bsctl_hash = self.execute.execute(self.bsctl_v)
