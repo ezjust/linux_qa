@@ -18,6 +18,9 @@ class UninstallAgent(Repoinstall):
 
         self.check_package_installed('rapidrecovery-vdisk', expected_result=False)
 
+        self.check_package_installed('rapidrecovery-agent',
+                                     expected_result=False) # There might to be a bug in the newest Ubuntu versions when agent is listed as installed due to configuration files.
+
         self.uninstall_autoremove()
         self.check_package_installed('dkms', expected_result=False) # dkms should be removed after autoremove
 

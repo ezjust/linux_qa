@@ -69,10 +69,10 @@ class AgentCommands(Agent):
                 of the bsctl and rapidrecovery-vss"""
                 raise Exception('There is missmatch in the bsctl -v and rapidreco'
                                 'very-vss versions')
-            print("----")
-            print("self.bsctl_hash()")
-            print("self.rapidrecovery_vss_hash()")
-            print("----")
+            # print("----")
+            # print("self.bsctl_hash()")
+            # print("self.rapidrecovery_vss_hash()")
+            # print("----")
             self.service_activity('rapidrecovery-agent', 'restart')
             self.status_of_the_service('rapidrecovery-agent', 0)
             self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent

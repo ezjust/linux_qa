@@ -17,7 +17,7 @@ class AgentConfigurator(Agent):
         '''By default, configuration file is not create once installation is 
                 completed. But, in case if previous tests with the using of the
                  rapidrecovery-config were used, this file might be before start of the
-                 test. Due to this we are chacking that and remove.'''
+                 test. Due to this we are checking that and remove.'''
         if os.path.isfile(self.configuration_log):
             os.remove(self.configuration_log)
         if os.path.isfile(self.agent_installation_log):

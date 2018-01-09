@@ -105,15 +105,12 @@ class Executor(object):
                                      stdin=subprocess.PIPE,
                                      stderr=subprocess.PIPE)
                 # ((output, err), code)
+                p.wait()
                 (output, err) = p.communicate(
                     input="{}\n".format("Y")), p.returncode
-                # print("OUT=", output)
-                # print(output)
-                # p.stdin.write("Y\n")
-                p_status = p.wait()
                 # error_code = p.communicate()[0]
                 print("%s :: I am in %s retry. 100 error core is received for '%s' command" % (time.ctime(), count, self.cmd))
-                # print(err)
+                print('.')
                 count+=1
                 time.sleep(60)
                 if 'install' in self.cmd or 'update' in self.cmd:
@@ -151,7 +148,6 @@ class Executor(object):
         # print("ERR=", p.poll())
         # print("PPOLL=", p.poll())
         # print p.poll()
-        # p.stdin.write("Y\n")
         #_status = p.wait()
         #error_code = p.communicate()[0]
         return (p.poll())
@@ -685,7 +681,7 @@ class Agent(Repoinstall):
                 words = ["Failed", "Error", "8006"]
                 for line in f:
                     if any(s in line for s in words):
-                        print(line)
+                        #print(line)
                         words_error = ["Failed", "Error"]
                         if any(k in line for k in words_error):
                             print(line)
