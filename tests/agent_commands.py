@@ -13,7 +13,6 @@ class AgentCommands(Agent):
         self.install_agent_fromrepo()
 
     def tearDown(self):
-        pass
         self.uninstall_agent()
         self.unload_module()
 
@@ -99,6 +98,7 @@ class AgentCommands(Agent):
 
         except Exception as e:
             print(e)
+            raise e
 
 
             # TODO: /etc/services needs to be updated with the port entries. Example: 8006 port on the agent startup.
