@@ -79,7 +79,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                                      stderr=subprocess.PIPE)
             # ((output, err), code)
             output, err = p.communicate()
-            print(output)
+            #print(output)
+            return output
 
 #@task
     def start_up(self):
@@ -91,26 +92,29 @@ class VagrantAutomation(SystemUtils, TestRunner):
                 v.up(vm_name=self.box_distro_name)
             except Exception:
                 time.sleep(60)
-                v.up(vm_name=self.box_distro_name)
-            except Exception as E:
-                print(E)
-                command = "echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`"
-                list = str(self.execute(cmd=command)) # get the list ofd the used virtualbox machines by the pid
-                print(list)
-                if len(list) is not 0:
-                    for i in list.splitlines():
-                        print(i)
-                        print('sudo kill -9' + i)
-                        self.execute(cmd='sudo kill -9 ' + i) # kill of the pids - releted to the virtualbox machine. May affect not only Vagrant boxes.
-                command = "echo ``"
                 try:
-                    v.destroy() # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
-                except Exception:
-                    pass
+                    v.up(vm_name=self.box_distro_name)
+                except Exception as E:
+                    print(E)
+                    list = []
+                    command = "echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`"
+                    for item in self.execute(cmd=command).split():
+                        print(item)
+                        print('sudo kill -9 ' + item)
+                        self.execute(cmd='sudo kill -9 ' + item) # kill of the pids - releted to the virtualbox machine. May affect not only Vagrant boxes.
 
-                print('I am in Exception')
-            #      # new try to up Vagrant machine.
-            # #TestRunner().open_log()
+                    try:
+                        print('Test')
+                        v.destroy() # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
+                    except Exception as e:
+                        print(e)
+                        print('I am in Exception')
+
+                    try:
+                        v.up(vm_name=self.box_distro_name)
+                    except Exception:
+                        raise Exception("I have no ability to start vagrant machine %s" % self.box_distro_name)
+
 
             self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
 
