@@ -1,12 +1,13 @@
 from __future__ import print_function
 from my_utils.system import *
 
+
 class AgentCommands(Agent):
     counter = 0
     link = None
 
-    def __init__(self):
-        super(Repoinstall, self).__init__()
+    # def __init__(self):
+    #     super(Repoinstall, self).__init__()
 
     def setUp(self):
         self.unload_module()
@@ -25,7 +26,7 @@ class AgentCommands(Agent):
             self.check_package_installed('dkms', expected_result=True)
 
             self.service_activity('rapidrecovery-agent', 'start') # we are restaring agent. Agent has not been configured yet.
-            # print("next")
+            print("next")
             self.status_of_the_service('rapidrecovery-agent', 0) # agent now should be running
 
             if self.install_distname() in ["ubuntu", "debian"]:
@@ -34,22 +35,23 @@ class AgentCommands(Agent):
                     time.sleep(5)
                     self.counter = self.counter + 1
                     # print(self.counter)
-                    # print("waining")
+                    print("waining")
                 self.status_of_the_service('rapidrecovery-vdisk', 0)
             if self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
+                print("I ma here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if self.error_code_of_the_service('rapidrecovery-vdisk') is not 0:
-                    self.rapidrecovery_config_api(build="all")
-                    self.service_activity('rapidrecovery-vdisk', 'start')
-                    self.counter = 0
-                    while self.error_code_of_the_service('rapidrecovery-vdisk') is not 0 and self.counter <= 12:
-                        time.sleep(5)
-                        self.counter = self.counter + 1
-                    if self.error_code_of_the_service('rapidrecovery-vdisk') is not 0:
-                        print(
-                            self.error_code_of_the_service('rapidrecovery-vdisk'))
-                        raise Exception("ERROR: Rapidrecovery-vdisk is not 0 even after start command.")
+                    raise Exception("The vdisk is not started by default after agent installation")
+                self.rapidrecovery_config_api(build="all")
+                self.service_activity('rapidrecovery-vdisk', 'restart')
+                self.counter = 0
+                while self.error_code_of_the_service('rapidrecovery-vdisk') is not 0 and self.counter <= 12:
+                    time.sleep(5)
+                    self.counter = self.counter + 1
+                if self.error_code_of_the_service('rapidrecovery-vdisk') is not 0:
+                    print(self.error_code_of_the_service('rapidrecovery-vdisk'))
+                    raise Exception("ERROR: Rapidrecovery-vdisk is not 0 even after start command.")
 
-            if self.error_code_of_the_service(self.nbd_check) is not 0:
+            if self.error_code(self.nbd_check) is not 0:
                 raise Exception("ERROR: There are no open nbd device.")
 
             counter = 0
@@ -69,11 +71,12 @@ class AgentCommands(Agent):
                 of the bsctl and rapidrecovery-vss"""
                 raise Exception('There is missmatch in the bsctl -v and rapidreco'
                                 'very-vss versions')
-            # print("----")
-            # print("self.bsctl_hash()")
-            # print("self.rapidrecovery_vss_hash()")
-            # print("----")
+            print("----")
+            print("self.bsctl_hash()")
+            print("self.rapidrecovery_vss_hash()")
+            print("----")
             self.service_activity('rapidrecovery-agent', 'restart')
+            print("ping")
             self.status_of_the_service('rapidrecovery-agent', 0)
             self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
             print("restart option is completed")

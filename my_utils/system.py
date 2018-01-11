@@ -79,6 +79,18 @@ class Executor(object):
         else:
             raise ValueError('The package manager of the system is not recognized')
 
+    def retry_len_function_is_zero(self, max_count):
+        def before(function):
+            def wrapper():
+                count = 0
+                while len(function()) is 0 and count < max_count:
+                    print("timeout %s" % count)
+                    count = count + 1
+
+            return wrapper()
+
+        return before
+
     def execute(self, cmd=None):
         # type: (object) -> object
         if cmd is not None:
@@ -142,8 +154,8 @@ class Executor(object):
                              stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         #((output, err), code)
         p.wait()
-        #(output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
-        # print("OUT=", output)
+        (output, err) = p.communicate(input="{}\n".format("Y")), p.returncode
+        #print("OUT=", output)
         # print(output)
         # print("ERR=", p.poll())
         # print("PPOLL=", p.poll())
@@ -211,14 +223,18 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     agent = "rapidrecovery-agent"
     repo =  "rapidrecovery-repo"
     link = None
-    su = SystemUtils()
+    #su = SystemUtils()
     repo_path = os.getcwd() + "/repo"
     print repo_path
-    execute = Executor()
+    __ex = Executor()
+    execute = __ex.execute
+    error_code = __ex.error_code
 
 
-    def __init__(self):
-        super(SystemUtils, self).__init__()
+    # def __init__(self):
+    #     super(SystemUtils, self).__init__()
+    #     super(Executor, self).__init__()
+
 
     def read_cfg(self):
         conf_file = "config.ini"
@@ -312,58 +328,51 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def create_link(self):
         self.read_cfg()
         build = self.build
-        check = Repoinstall()
-        test = SystemUtils()
-        link = 'https://s3.amazonaws.com/repolinux/' + build + '/repo-packages/rapidrecovery-repo-' + check.install_distname() + check.install_version() + '-' + test.machine_type() + '.' + check.install_packmanager()
+        link = 'https://s3.amazonaws.com/repolinux/' + build + '/repo-packages/rapidrecovery-repo-' + self.install_distname() + self.install_version() + '-' + self.machine_type() + '.' + self.install_packmanager()
         return link
 
     def download_file(self):
-        self.test = Repoinstall()
         filename = 'repo'
-        r = requests.get(self.test.create_link())
+        r = requests.get(self.create_link())
         file = open(filename, 'wb')
         for chunk in r.iter_content(100000):
             file.write(chunk)
         file.close()
 
     def run_repo_installer(self):
-        check = Repoinstall()
-        install = "sudo " + check.packmanager() + " -i" + " repo"
-        execute = Executor()
-        execute.execute(install)
+        install = "sudo " + self.packmanager() + " -i" + " repo"
+        self.execute(install)
         if self.install_distname() != "sles":
-            update = "sudo " + check.software_manager() + " update"
-            execute.execute(update)
+            update = "sudo " + self.software_manager() + " update"
+            self.execute(update)
 
     def install_agent_fromrepo(self):
         self.create_link()
         self.download_file()
-        check = Repoinstall()
         try:
-            execute = Executor()
             if self.check_installed_code_rapid() is 1:
 
-                install = "sudo " + check.packmanager() + " -i" + " repo"
-                execute.execute(install)
+                install = "sudo " + self.packmanager() + " -i" + " repo"
+                self.execute(install)
 
             elif self.check_installed_code_rapid() not in [0, 1]:
                 raise Exception("Received not [0,1] result code for check rapid")
 
             if self.install_distname() == "sles":
-                clean_all = "sudo " + check.software_manager() + " clean -M"
-                execute.execute(clean_all)
-                installation = "sudo " + check.software_manager() + " --gpg-auto-import-keys" + " install" + " -y " + self.agent
+                clean_all = "sudo " + self.software_manager() + " clean -M"
+                self.execute(clean_all)
+                installation = "sudo " + self.software_manager() + " --gpg-auto-import-keys" + " install" + " -y " + self.agent
 
             else:
-                update = "sudo " + check.software_manager() + " update -y"
-                execute.execute(update)
-                clean_all = "sudo " + check.software_manager() + " clean all"
-                execute.execute(clean_all)
-                installation = "sudo " + check.software_manager() + " install" + " -y " + self.agent
+                update = "sudo " + self.software_manager() + " update -y"
+                self.execute(update)
+                clean_all = "sudo " + self.software_manager() + " clean all"
+                self.execute(clean_all)
+                installation = "sudo " + self.software_manager() + " install" + " -y " + self.agent
                 #execute.execute(update)
             # print(clean_all)
             # print installation
-            execute.execute(installation)
+            self.execute(installation)
 
         except Exception as e:
             raise(e)
@@ -372,21 +381,21 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def check_installed_code_rapid(self):
         '''Returns exit code if any rapidrecovery package is installed on the system.
         Returns "0" if package/s is available. "1" if not available'''
-        execute = Executor()
+        #execute = Executor()
         check_installed_code = None
 
         if self.packmanager() in "rpm":
-            check_installed_code = execute.error_code(
+            check_installed_code = self.error_code(
                 self.installed_package() + " | grep rapid")
         elif self.packmanager() in "dpkg":
-            check_installed_code = execute.error_code(
+            check_installed_code = self.error_code(
                 self.installed_package() + "| grep ii | grep rapid")
 
         return check_installed_code
 
 
     def uninstall_agent(self):
-        execute = Executor()
+        #execute = Executor()
 
         if self.check_installed_code_rapid() is 0:
             if self.install_distname() == "sles":
@@ -395,17 +404,17 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             else:
                 uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
                 unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
-            execute.execute(uninstallation_agent)
-            not_removed = execute.execute(
+            self.execute(uninstallation_agent)
+            not_removed = self.execute(
                 self.software_manager() + " | grep rapid | awk '{print $2}'")[
                 0][0]
-            not_removed_dkms = execute.execute(
+            not_removed_dkms = self.execute(
                 self.software_manager() + " | grep dkms | awk '{print $2}'")[
                 0][0]
             if self.check_installed_code_rapid() is 0:
-                execute.execute(unistallation_other)
-            not_removed = execute.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
-            not_removed_dkms = execute.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
+                self.execute(unistallation_other)
+            not_removed = self.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
+            not_removed_dkms = self.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
             # print("completed uninstall agent")
 
     def uninstall_autoremove(self):
@@ -429,16 +438,16 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
 
     def uninstall_repo(self):
-        execute = Executor()
+        #execute = Executor()
         if self.install_distname() == "sles":
             uninstallation_repo = self.software_manager() + " remove" + " -y " + self.repo
         else:
             uninstallation_repo = self.software_manager() + " remove" + " " + self.repo
-        execute.execute(uninstallation_repo)
+        self.execute(uninstallation_repo)
 
     def get_process_pid(self, cmd):
         self.cmd = 'pidof ' + cmd
-        return self.execute.execute(self.cmd)
+        return self.execute(self.cmd)
 
     def get_installed_package(self, cmd):
         self.cmd = cmd
@@ -450,7 +459,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             raise Exception("self.packmanager indicated error during execution")
 
         # print(self.execute.execute(self.command))
-        code = self.execute.error_code(self.command)
+        code = self.error_code(self.command)
         if code is 0:
             result = True
         elif code is 1:
@@ -486,64 +495,64 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def return_of_unix_command(self, command):
         self.command = command
-        result = self.execute.execute(self.command)[0][0]
+        result = self.execute(self.command)[0][0]
         return result
 
 
     def check_initd(self):
         '''127 error code is recevied for systemctl --version on the init systems'''
-        execute = Executor()
-        a = Repoinstall()
+        # execute = Executor()
+        # a = Repoinstall()
         command = 'systemctl --version'
-        if 127 is a.execute.error_code(command):
+        if 127 is self.error_code(command):
             return '/etc/init.d'
         else:
             return 'systemctl'
 
     def status_of_the_service(self, cmd, code):
-        a = Repoinstall()
+        # a = Repoinstall()
         self.cmd = cmd
         self.code = code
-        if a.check_initd() == 'systemctl':
+        if self.check_initd() == 'systemctl':
             command = 'systemctl status %s'% self.cmd
             if self.code is not None:
-                if self.execute.error_code(command) is not self.code:
-                    raise Exception("SYSTEMCTL: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+                if self.error_code(command) is not self.code:
+                    raise Exception("SYSTEMCTL: Got %s error code instead of %s for %s command" % (self.error_code(command), self.code, self.cmd))
             else:
-                return self.execute.error_code(command)
-        elif a.check_initd() == '/etc/init.d':
+                return self.error_code(command)
+        elif self.check_initd() == '/etc/init.d':
             command = '/etc/init.d/%s status'% self.cmd
             if self.code is not None:
-                if self.execute.error_code(command) is not self.code:
-                    raise Exception("INITD: Got %s error code instead of %s for %s command" % (self.execute.error_code(command), self.code, self.cmd))
+                if self.error_code(command) is not self.code:
+                    raise Exception("INITD: Got %s error code instead of %s for %s command" % (self.error_code(command), self.code, self.cmd))
             else:
-                return self.execute.error_code(command)
+                return self.error_code(command)
         else:
             raise Exception("ERROR in status of the service for the %s" % self.cmd)
 
     def error_code_of_the_service(self, cmd):
-        a = Repoinstall()
+        # a = Repoinstall()
         self.cmd = cmd
-        if a.check_initd() == 'systemctl':
+        if self.check_initd() == 'systemctl':
             command = 'systemctl status %s' % self.cmd
-            return self.execute.error_code(command)
-        elif a.check_initd() == '/etc/init.d':
+            return self.error_code(command)
+        elif self.check_initd() == '/etc/init.d':
             command = '/etc/init.d/%s status' % self.cmd
-            return self.execute.error_code(command)
+            return self.error_code(command)
         else:
             raise Exception("Error is return of the error code of service")
 
 
     def service_activity(self, cmd, action):
-        a = Repoinstall()
+        # a = Repoinstall()
         self.cmd = cmd
         self.action = action
-        if a.check_initd() == 'systemctl':
+        if self.check_initd() == 'systemctl':
             command = 'sudo systemctl %s %s' % (self.action, self.cmd)
-            self.execute.execute(command)
-        elif a.check_initd() == '/etc/init.d':
+            self.execute(command)
+        elif self.check_initd() == '/etc/init.d':
             command = 'sudo /etc/init.d/%s %s' % (self.cmd, self.action)
-            self.execute.execute(command)
+            self.execute(command)
         else:
             raise Exception("failed to start service!")
 
@@ -553,7 +562,7 @@ class Agent(Repoinstall):
     rapidrecovery_vss_v = "dmesg | grep 'rapidrecovery-vss: loaded' | tail -n1 | tr ' ' '\n' | tail -n4 | head -n1"
     module_name = "rapidrecovery-vss"
     check_module_is_loaded = "lsmod | grep rapidrecovery_vss"
-    nbd_check = "ps axf | grep 'nbd[0-9]'; echo $?"
+    nbd_check = "ps axf | grep 'nbd[0-9]'"
     rapid_vss_installed = "/usr/sbin/dkms status | grep rapidrecovery-vss | tr ' ' '\n' | tail -n1"
 
     def file_exists(self, result, file):
@@ -578,38 +587,38 @@ class Agent(Repoinstall):
             self.status_of_the_service('rapidrecovery-agent', 0)
 
             counter = 0
-            while self.execute.error_code('netstat -anp | grep mono') is not 0 and counter < 20:
+            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 60:
                 time.sleep(0.5)
                 counter = counter + 1
 
-            if self.execute.error_code('netstat -anp | grep mono') is not 0:
+            if self.error_code('netstat -anp | grep mono') is not 0:
                 raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 5 sec did not help. Please investigate.")
 
 
     def bsctl_hash(self):
-        bsctl_hash = self.execute.execute(self.bsctl_v)
+        bsctl_hash = self.execute(self.bsctl_v)
         return bsctl_hash
 
     def rapidrecovery_vss_hash(self):
-        result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
+        result = self.execute(self.rapidrecovery_vss_v)[0][0]
         while len(result) is 0:
-            result = self.execute.execute(self.rapidrecovery_vss_v)[0][0]
+            result = self.execute(self.rapidrecovery_vss_v)[0][0]
             time.sleep(5)
             # print("Waiting for the rapidrecovery_vss_v")
-        rapidrecovery_vss_hash = self.execute.execute(self.rapidrecovery_vss_v)
+        rapidrecovery_vss_hash = self.execute(self.rapidrecovery_vss_v)
         return rapidrecovery_vss_hash
 
 
     def unload_module(self):
-        if self.execute.error_code(self.check_module_is_loaded) is 0:
-            self.execute.execute('rmmod ' + self.module_name)
+        if self.error_code(self.check_module_is_loaded) is 0:
+            self.execute('rmmod ' + self.module_name)
 
     def load_module(self):
-        if self.execute.error_code(self.check_module_is_loaded) is not 0:
-            self.execute.execute('modprobe' + self.module_name)
+        if self.error_code(self.check_module_is_loaded) is not 0:
+            self.execute('modprobe' + self.module_name)
 
     def rapidrecovery_vss_installed(self):
-        result = self.execute.execute(self.rapid_vss_installed)[0][0].rstrip()
+        result = self.execute(self.rapid_vss_installed)[0][0].rstrip()
         return result
 
     def rapidrecovery_config_api(self, port=None, user=None, method=None, build=None, start=None, vault=None, delete_user=None, snapper=None):
@@ -625,6 +634,7 @@ class Agent(Repoinstall):
         :return: True/False
         '''
         if build:
+            print("Buiild = %s " % build)
             self.build = build
         if port:
             self.port = port
@@ -643,21 +653,22 @@ class Agent(Repoinstall):
         config = "/usr/bin/rapidrecovery-config"
         try:
             if port:
-                self.execute.execute(cmd=config + " -p " + self.port)
+                self.execute(cmd=config + " -p " + self.port)
             if user:
-                self.execute.execute(cmd=config + " -u " + self.user)
+                self.execute(cmd=config + " -u " + self.user)
             if build:
-                self.execute.execute(cmd=config + " -m " + self.build)
+                print("Building")
+                self.execute(cmd=config + " -m " + self.build)
             if method:
-                self.execute.execute(cmd=config + " -f " + self.method)
+                self.execute(cmd=config + " -f " + self.method)
             if start:
-                self.execute.execute(cmd=config + " -s")
+                self.execute(cmd=config + " -s")
             if vault:
-                self.execute.execute(cmd=config + " -v " + self.vault)
+                self.execute(cmd=config + " -v " + self.vault)
             if delete_user:
-                self.execute.execute(cmd=config + " -d " + self.delete_user)
+                self.execute(cmd=config + " -d " + self.delete_user)
             if snapper:
-                self.execute.execute(cmd=config + " -n " + self.snapper)
+                self.execute(cmd=config + " -n " + self.snapper)
             return True
 
         except Exception as E:

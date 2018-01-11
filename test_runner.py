@@ -32,6 +32,26 @@ def get_class_name(mod_name):
 
         return output
 
+
+import imp
+
+
+def __import__(name, globals=None, locals=None, fromlist=None):
+    # First path: see if module has already been imported
+    try:
+        """ Ensure that module isn't already loaded """
+        return sys.modules[name]
+    except KeyError:
+        pass
+
+    fp, pathname, descr = imp.find_module(name)
+
+    try:
+        return imp.load_module(name, fp, pathname, descr)
+    finally:
+        if fp:
+            fp.close()
+
 class TestRunner(object):
 
     conf_file = None
@@ -54,11 +74,12 @@ class TestRunner(object):
             loaded_mod = __import__(mod_name, fromlist=[mod_name])
             # Load class from imported module
             class_name = get_class_name(mod_name)
-            self.test_classes[class_name] = getattr(loaded_mod, class_name)
+            self.test_classes.update({class_name: getattr(loaded_mod, class_name)})
+            # self.test_classes[class_name] = getattr(loaded_mod, class_name)
             self.test_modules[class_name] = mod_name
         sys.path.remove(path_)
 
-        return
+        # return
 
 
     def read_cfg(self):
@@ -83,15 +104,21 @@ class TestRunner(object):
         self.setup()
         self.read_cfg()
         for key, value in self.test_list.items():
+
+            test = None
             #  if key == "InstallAgent" and int(value) == 1:
             if int(value) == 1:
-                # print(self.test_classes[key])
                 result = None
                 try:
-                    self.executor.log("%s test :\n" % key)
+                    #self.executor.log("%s test :\n" % key)
+                    # test = self.test_classes[key]
                     test = self.test_classes[key]()
-                    # print(test)
-                    # exit(1)
+                    # print("print test ", test)
+                    # test = test()
+
+                    # print(test.__dict__)
+                    # print("================", test)
+                    #exit(1)
                     self.executor.log("Setting Up %s test .....\n" % key)
                     test.setUp()
                     #self.executor.log("Done")
