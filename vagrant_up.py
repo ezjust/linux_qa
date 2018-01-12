@@ -91,7 +91,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
             try:
                 v.up(vm_name=self.box_distro_name)
             except Exception:
-                time.sleep(60)
+                time.sleep(10)
                 try:
                     v.up(vm_name=self.box_distro_name)
                 except Exception as E:
@@ -99,16 +99,12 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     list = []
                     command = "echo `ps axf | grep virtualbox | grep VBoxHead | awk {'print $1'}`"
                     for item in self.execute(cmd=command).split():
-                        print(item)
-                        print('sudo kill -9 ' + item)
                         self.execute(cmd='sudo kill -9 ' + item) # kill of the pids - releted to the virtualbox machine. May affect not only Vagrant boxes.
 
                     try:
-                        print('Test')
                         v.destroy() # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
                     except Exception as e:
                         print(e)
-                        print('I am in Exception')
 
                     try:
                         v.up(vm_name=self.box_distro_name)
@@ -122,42 +118,44 @@ class VagrantAutomation(SystemUtils, TestRunner):
                 try:
                     box_distro = self.box_distro_name.split('_')
                     box_distro_name = box_distro[0]
-                    #v.up(vm_name=self.box_distro_name)
-
                     print("Install environment is in progress...")
                     if box_distro_name in ('ubuntu', 'debian'):
                         clean = "echo `ps -A | grep apt | awk '{print $1}'`"
                         result_clean = run(clean)
-                        # print(result_clean)
-                        # print(len(result_clean))
                         if len(result_clean) is not 0:
                             sudo(stderr=False, command='kill -9 ' + result_clean)
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
-                        #sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
-                        # sudo('mv /usr/bin/python /usr/bin/python2.6_old')
-                        # sudo('ln -s /usr/bin/python2.7 /usr/bin/python')
-                        sudo('yum update -y', stdout=configuration_log)
-                        sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                        sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
-                        sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                        sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
-                        sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
-                        sudo('pip install --upgrade pip', stdout=configuration_log)
-                        if box_distro[1] in ('6'):
-                            sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
-                        else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
+
+                        def install_rhel_preparation():
+                            sudo('yum update -y', stdout=configuration_log)
+                            sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                            sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
+                            sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                            sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
+                            sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
+                            sudo('pip install --upgrade pip', stdout=configuration_log)
+                            if box_distro[1] in ('6'):
+                                sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
+                            else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
+                        try:
+                            install_rhel_preparation()
+                        except Exception as E:
+                            print(E)
+                            time.sleep(15)
+                            install_rhel_preparation()
+
                     elif box_distro_name in ('sles', 'suse'):
                         #sudo('zypper rr 2', stdout=configuration_log, shell=False)
                         # Looks like the image of the SLES box already contains installed rapidrecovery-agent. Uninstall.
-                        print("Hello")
+                        #print("Hello")
                         # there is bug in the non-interactive install on the
                         # SLES OS, when there is conflicts on some packages,
                         # you cannot avoid on by scripting in non-interactive mode.
                         #sudo('zypper -n update -y', stdout=configuration_log)
-                        print(self.sles_packages)
-                        print('zypper install -n ' + self.sles_packages)
+                        #print(self.sles_packages)
+                        #print('zypper install -n ' + self.sles_packages)
                         sudo('zypper clean -M', stdout=configuration_log)
                         sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
                         #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')

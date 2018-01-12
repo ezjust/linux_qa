@@ -372,7 +372,17 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 #execute.execute(update)
             # print(clean_all)
             # print installation
-            self.execute(installation)
+            try:
+                self.execute(installation)
+            except Exception as e:
+                print e
+
+
+            if not self.check_package_installed(cmd='rapidrecovery-agent', expected_result=True):
+                raise Exception('The rapidrecovery-agent is not installed')
+            if not self.check_package_installed(cmd='rapidrecovery-mono', expected_result=True):
+                raise Exception('The rapidrecovery-mono is not installed')
+
 
         except Exception as e:
             raise(e)
@@ -415,6 +425,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 self.execute(unistallation_other)
             not_removed = self.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
             not_removed_dkms = self.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
+
+            if self.status_of_the_service(cmd='rapidrecovery-agent', code=None) is 0:
+                self.service_activity(cmd='rapidrecovery-agent', action='stop')
+                if self.status_of_the_service(cmd='rapidrecovery-agent', code=None) is 0:
+                    raise Exception('The agent code is "0" even after "stop" service option')
+
+
             # print("completed uninstall agent")
 
     def uninstall_autoremove(self):
@@ -510,6 +527,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             return 'systemctl'
 
     def status_of_the_service(self, cmd, code):
+        '''Return error code of the status of the service if code is not specified. If code is specified and it is differ from received - Exception is received.'''
         # a = Repoinstall()
         self.cmd = cmd
         self.code = code
@@ -592,7 +610,7 @@ class Agent(Repoinstall):
                 counter = counter + 1
 
             if self.error_code('netstat -anp | grep mono') is not 0:
-                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 5 sec did not help. Please investigate.")
+                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 30 sec did not help. Please investigate.")
 
 
     def bsctl_hash(self):
