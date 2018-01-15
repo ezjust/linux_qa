@@ -25,9 +25,7 @@ class AgentCommands(Agent):
 
             self.check_package_installed('dkms', expected_result=True)
 
-            self.service_activity('rapidrecovery-agent', 'start') # we are restaring agent. Agent has not been configured yet.
-            print("next")
-            self.status_of_the_service('rapidrecovery-agent', 0) # agent now should be running
+            self.check_agent_is_running()
 
             if self.install_distname() in ["ubuntu", "debian"]:
                 self.counter = 0
