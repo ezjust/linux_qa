@@ -608,8 +608,9 @@ class Agent(Repoinstall):
             while self.error_code('netstat -anp | grep mono') is not 0 and counter < 60:
                 time.sleep(0.5)
                 counter = counter + 1
-
+            print('Stage1')
             if self.error_code('netstat -anp | grep mono') is not 0:
+                print(self.error_code('netstat -anp | grep mono'))
                 raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 30 sec did not help. Please investigate.")
 
 
