@@ -26,7 +26,7 @@ class AgentCommands(Agent):
             self.check_package_installed('dkms', expected_result=True)
 
             self.check_agent_is_running()
-
+            print('Testplace')
             if self.install_distname() in ["ubuntu", "debian"]:
                 self.counter = 0
                 while self.error_code_of_the_service('rapidrecovery-vdisk') is not 0 and self.counter <= 12:

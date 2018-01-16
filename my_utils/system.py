@@ -79,17 +79,6 @@ class Executor(object):
         else:
             raise ValueError('The package manager of the system is not recognized')
 
-    def retry_len_function_is_zero(self, max_count):
-        def before(function):
-            def wrapper():
-                count = 0
-                while len(function()) is 0 and count < max_count:
-                    print("timeout %s" % count)
-                    count = count + 1
-
-            return wrapper()
-
-        return before
 
     def execute(self, cmd=None):
         # type: (object) -> object
@@ -164,6 +153,17 @@ class Executor(object):
         #error_code = p.communicate()[0]
         return (p.poll())
 
+    def error_message(self, cmd=None):
+        # type: (object) -> object
+        if cmd is not None:
+            self.cmd = cmd
+        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        #((output, err), code)
+        p.wait()
+        (output, err) = p.communicate()
+        return (err)
+
     def get_logfile(self):
         return self.__logFile
 
@@ -229,6 +229,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     __ex = Executor()
     execute = __ex.execute
     error_code = __ex.error_code
+    error_message = __ex.error_message
 
 
     # def __init__(self):
@@ -399,6 +400,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
                             finally:
                                 counter = counter + 1
+                                time.sleep(20)
 
                     return wrapper
 
@@ -411,6 +413,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                     print("Execute True")
                     return True
                 except Exception:
+                    self.error_message(installation)
                     print('Failed')
                     return False
 
