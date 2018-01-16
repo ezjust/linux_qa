@@ -33,10 +33,8 @@ class AgentCommands(Agent):
                     time.sleep(5)
                     self.counter = self.counter + 1
                     # print(self.counter)
-                    print("waining")
                 self.status_of_the_service('rapidrecovery-vdisk', 0)
             if self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
-                print("I ma here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if self.error_code_of_the_service('rapidrecovery-vdisk') is not 0:
                     raise Exception("The vdisk is not started by default after agent installation")
                 self.rapidrecovery_config_api(build="all")
@@ -60,24 +58,14 @@ class AgentCommands(Agent):
                 counter = counter + 1
 
             if self.bsctl_hash() != self.rapidrecovery_vss_hash():
-                print("----")
-                print("self.bsctl_hash()")
-                print("self.rapidrecovery_vss_hash()")
-                print("----")
                 """we assume, that if agent is started without configuring, module
                 should be loaded automaticaly. Here we are comparing versions
                 of the bsctl and rapidrecovery-vss"""
                 raise Exception('There is missmatch in the bsctl -v and rapidreco'
                                 'very-vss versions')
-            print("----")
-            print("self.bsctl_hash()")
-            print("self.rapidrecovery_vss_hash()")
-            print("----")
             self.service_activity('rapidrecovery-agent', 'restart')
-            print("ping")
             self.status_of_the_service('rapidrecovery-agent', 0)
             self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
-            print("restart option is completed")
 
             self.service_activity('rapidrecovery-agent', 'stop')
             if self.check_initd() in "/etc/init.d":
@@ -86,7 +74,6 @@ class AgentCommands(Agent):
                 self.status_of_the_service('rapidrecovery-agent', 3) #seems like 3 is return when service is not running. Needs to be clarified. SYSTEMD.
 
             self.status_of_the_service('rapidrecovery-vdisk', 0) # rapidrecovery-vdisk should not be linked with the agent
-            print("stop option is completed")
 
             self.service_activity('rapidrecovery-agent', 'start')
             self.status_of_the_service('rapidrecovery-agent', 0)

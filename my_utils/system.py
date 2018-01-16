@@ -354,7 +354,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
                 install = "sudo " + self.packmanager() + " -i" + " repo"
                 self.execute(install)
-
+                print('Repo installed')
             elif self.check_installed_code_rapid() not in [0, 1]:
                 raise Exception("Received not [0,1] result code for check rapid")
 
@@ -372,10 +372,49 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 #execute.execute(update)
             # print(clean_all)
             # print installation
-            try:
-                self.execute(installation)
-            except Exception as e:
-                print e
+
+
+            def retry(num):
+
+                def count(function):
+
+                    def wrapper():
+
+                        counter = 0
+                        result = False
+
+                        while not result and counter < num:
+
+                            try:
+                                if function():
+                                    result = True
+                                    print("True")
+                                else:
+                                    print('False2')
+                                    raise Exception
+
+                            except Exception:
+                                result = False
+                                print("False")
+
+                            finally:
+                                counter = counter + 1
+
+                    return wrapper
+
+                return count
+
+            @retry(num=10)
+            def run_install():
+                try:
+                    self.execute(installation)
+                    print("Execute True")
+                    return True
+                except Exception:
+                    print('Failed')
+                    return False
+
+            run_install()  # decorator with retry should work
 
 
             if not self.check_package_installed(cmd='rapidrecovery-agent', expected_result=True):
@@ -475,7 +514,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         else:
             raise Exception("self.packmanager indicated error during execution")
 
-        # print(self.execute.execute(self.command))
         code = self.error_code(self.command)
         if code is 0:
             result = True
@@ -483,7 +521,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             result = False
         else:
             raise Exception("I have received not [0, 1] exit codes for the %s" % self.command)
-        # print(self.command + " is %s" % result)
         return result
 
 
@@ -504,8 +541,6 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             if self.expected_result is self.get_installed_package(self.cmd):
                 return True
             else:
-                print(" self.get_installed_package(self.cmd) is %s" % self.get_installed_package(self.cmd))
-                print(" self.expected_result is %s" % self.expected_result)
                 raise Exception(
                     "%s package is installed. But should NOT be installed." % self.cmd)
 
