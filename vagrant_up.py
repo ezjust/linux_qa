@@ -124,6 +124,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         result_clean = run(clean)
                         if len(result_clean) is not 0:
                             sudo(stderr=False, command='kill -9 ' + result_clean)
+                        sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
@@ -204,7 +205,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         'wget https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
                         sudo('chmod +x ./agent_install.sh')
                         sudo('./agent_install.sh --install --branch=' + self.build_agent,
-                         stdout=installation_agent_log)
+                        stdout=installation_agent_log)
                         try:
                             ipaddr = sudo("ip addr show | grep '10.10' | awk '{print $2}' | cut -d'/' -f1")
                             counter = 0

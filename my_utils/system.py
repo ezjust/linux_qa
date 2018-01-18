@@ -350,6 +350,46 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def install_agent_fromrepo(self):
         self.create_link()
         self.download_file()
+
+        def retry(num):
+            '''The decorator is used to avoid some errors on the installation stage:
+            TC build agent and during some period time agent may not be available. To avoid this we use decorator.
+            Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
+            def count(function):
+                def wrapper(*args, **kwargs):
+                    counter = 0
+                    result = False # default result is set to False, to start new cycle
+                    while not result and counter < num:
+                        try:
+                            if function(*args, **kwargs):
+                                result = True
+                                print("True")
+                            else:
+                                print('False2')
+                                raise Exception
+                        except Exception:
+                            result = False
+                            print("False")
+                        finally:
+                            counter = counter + 1 # increment of the counyer
+                            time.sleep(20) # timeout between retries
+                return wrapper
+            return count
+
+        @retry(num=10)
+
+        def run(cmd):   # here we describe the decorator for the running command
+                        # on the installation process. cmd is used to be parameter, which is
+                        # received by the run command, which will be repeated each time it fails until counter is less 10
+                        # We can use this run(cmd) function for all commands we would like to be used with retry
+            try:
+                self.execute(cmd)
+                print("Execute True")
+                return True
+            except Exception:
+                print("The error message is : %s" % self.error_message(cmd))
+                return False
+
         try:
             if self.check_installed_code_rapid() is 1:
 
@@ -361,64 +401,17 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
             if self.install_distname() == "sles":
                 clean_all = "sudo " + self.software_manager() + " clean -M"
-                self.execute(clean_all)
+                run(cmd=clean_all)
                 installation = "sudo " + self.software_manager() + " --gpg-auto-import-keys" + " install" + " -y " + self.agent
+                run(cmd=installation)
 
             else:
                 update = "sudo " + self.software_manager() + " update -y"
-                self.execute(update)
+                run(cmd=update)
                 clean_all = "sudo " + self.software_manager() + " clean all"
-                self.execute(clean_all)
+                run(cmd=clean_all)
                 installation = "sudo " + self.software_manager() + " install" + " -y " + self.agent
-                #execute.execute(update)
-            # print(clean_all)
-            # print installation
-
-
-            def retry(num):
-
-                def count(function):
-
-                    def wrapper():
-
-                        counter = 0
-                        result = False
-
-                        while not result and counter < num:
-
-                            try:
-                                if function():
-                                    result = True
-                                    print("True")
-                                else:
-                                    print('False2')
-                                    raise Exception
-
-                            except Exception:
-                                result = False
-                                print("False")
-
-                            finally:
-                                counter = counter + 1
-                                time.sleep(20)
-
-                    return wrapper
-
-                return count
-
-            @retry(num=10)
-            def run_install():
-                try:
-                    self.execute(installation)
-                    print("Execute True")
-                    return True
-                except Exception:
-                    self.error_message(installation)
-                    print('Failed')
-                    return False
-
-            run_install()  # decorator with retry should work
-
+                run(cmd=installation)
 
             if not self.check_package_installed(cmd='rapidrecovery-agent', expected_result=True):
                 raise Exception('The rapidrecovery-agent is not installed')

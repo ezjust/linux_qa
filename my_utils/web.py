@@ -42,17 +42,12 @@ def read_cfg():
     core_login = cp.get('general', 'core_login')
     core_password = cp.get('general', 'core_password')
     core_link = 'https://' + core_ip + ':8006/apprecovery/admin'
-    protect_agent = cp.get('web', 'protect_agent')
     build_agent = cp.get('general', 'build_agent')
-    rollback_agent = cp.get('web', 'rollback_agent')
-    auto_bmr_agent = cp.get('web', 'auto_bmr_agent')
-    bmr_bootable_agent = cp.get('web', 'bmr_bootable_agent')
-    force_snapshot_agent = cp.get('web', 'force_snapshot_agent')
     os_name = cp.get('web', 'os')
-    return ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname,os_name
+    return ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, build_agent, vbox_export_vmname,os_name
 
 
-ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, protect_agent, build_agent, rollback_agent, auto_bmr_agent, bmr_bootable_agent, force_snapshot_agent, vbox_export_vmname, os_name = read_cfg()
+ip_machine, username_machine, password_machine, ip_livecd, core_ip, core_login, core_password, pass_livecd, vbox_vmname, core_link, build_agent, vbox_export_vmname, os_name = read_cfg()
 
 
 class WebAgent(object):
@@ -669,12 +664,12 @@ class WebAgent(object):
             title = re.findall('title=".*?"', str(substring))
             #print title
             #print('134')
-            if build_agent == '7.0.0':
-                #print "Build agent is 7.0.0"
-                title = title[0].split('"', 1)                                 #7.0.0 title: ['title=', 'Succeeded"']
+            if build_agent == '6.2.0':
+                #print "Build agent is 6.2.0"
+                title = title[0].split('"', 1)                                 #6.2.0 title: ['title=', 'Succeeded"']
                                                                                #7.1.0 title: ['Succeeded', '']
 
-                #print("7.0.0 title: %s" % title)
+                #print("6.2.0 title: %s" % title)
                 #print("7.1.0 title: %s" % title[1].split('"', 1))
             else:
                 #print "Build agent is 7.1.0"
@@ -813,16 +808,16 @@ class WebAgent(object):
             while self.last_job_attr == self.list_events(ip_machine):
                 #print("Equal")
                 time.sleep(10)
-            # print("New event received")
+            #print("New event received")
             test = self.list_events(ip_machine)
             for item in test:
                 if item not in self.last_job_attr:
                     while event_status not in ("Succeeded", "Error"):
                         active_event = item
-                        # print test.get(item)
+                        #print test.get(item)
                         event_status = test.get(item)[1] # return status of the event
                         event_name = test.get(item)[0] # return name of the event
-                        # print(event_status)
+                        #print(event_status)
                         time.sleep(0.1)
                         test = self.list_events(ip_machine)
         except:
