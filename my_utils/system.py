@@ -363,13 +363,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                         try:
                             if function(*args, **kwargs):
                                 result = True
-                                print("True")
+                                #print("True")
                             else:
-                                print('False2')
+                                #print('False2')
                                 raise Exception
                         except Exception:
                             result = False
-                            print("False")
+                            #print("False")
                         finally:
                             counter = counter + 1 # increment of the counyer
                             time.sleep(20) # timeout between retries
@@ -379,12 +379,12 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         @retry(num=10)
 
         def run(cmd):   # here we describe the decorator for the running command
-                        # on the installation process. cmd is used to be parameter, which is
+                        # on the installation process. 'cmd' is used to be parameter, which is
                         # received by the run command, which will be repeated each time it fails until counter is less 10
                         # We can use this run(cmd) function for all commands we would like to be used with retry
             try:
                 self.execute(cmd)
-                print("Execute True")
+                #print("Execute True")
                 return True
             except Exception:
                 print("The error message is : %s" % self.error_message(cmd))
