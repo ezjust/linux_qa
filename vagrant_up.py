@@ -333,6 +333,6 @@ if __name__ == '__main__':
         for line in f:
             print(line)
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    start.close_log()
+    #start.close_log()
 
 
