@@ -111,9 +111,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     except Exception:
                         raise Exception("I have no ability to start vagrant machine %s" % self.box_distro_name)
 
-
+            print('1')
             self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
-
+            print('2')
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
                 try:
                     box_distro = self.box_distro_name.split('_')
@@ -300,7 +300,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 
 if __name__ == '__main__':
-
+    import datetime
+    print(datetime.datetime.now().time())
     start = VagrantAutomation()
     start.read_cfg()
     start.clean_box_log()
@@ -308,14 +309,19 @@ if __name__ == '__main__':
     start.clean_log(name='configuration.log')
     start.clean_log(name='result.log')
     start.open_box_log()
-    start.remove_log()
+    #start.remove_log()
+    print(datetime.datetime.now().time())
+
+    print("Completed start")
 
     for vm in start.os_list:
+        print(datetime.datetime.now().time())
         print("VM NAME = ", vm)
         start.save_vmname(vm=vm)
         print(vm + " : executing....")
         start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
+        print(datetime.datetime.now().time())
         start.start_up()
         start.remove_archive()
         start.parse_box_log()

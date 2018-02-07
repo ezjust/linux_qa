@@ -78,11 +78,13 @@ class TestRunner(object):
 
     def write_log(self, message):
         self.message = message
-        self.open_log()
+        print("Wrote")
         self.result_log.write(self.message)
+        self.result_log.write("TESTING")
+        self.result_log.close()
 
     def close_log(self):
-        self.result_log = open("result.log", 'a+')
+        #self.result_log = open("result.log", 'a+')
         self.result_log.close()
 
     def remove_log(self):
