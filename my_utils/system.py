@@ -59,11 +59,9 @@ class Executor(object):
     def __new__(cls):
         if cls.__instance is None:
             cls.__instance = super(Executor, cls).__new__(cls)
-            start_log_time = time.strftime("%Y%m%d-%H%M%S")
             if not os.path.exists(cls.__logDir):
                 os.mkdir(cls.__logDir)
-            cls.__logFile = open(cls.__logDir + "/Log-%s.log" % start_log_time,
-                                 "w+")
+            cls.__logFile = open(cls.__logDir + "/Log.log", "w+")
         return cls.__instance
 
     def package_manager(self):
@@ -175,6 +173,7 @@ class Executor(object):
 
 
     def log(self, string, timestamp=True):
+        '''Timestamp=True will print the time to the Log for the new test string.'''
         if self.__debug:
             print string
         if timestamp:

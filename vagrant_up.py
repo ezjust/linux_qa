@@ -193,6 +193,12 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
                     run("cd " + box_work_path, stdout=configuration_log)
                     run("sudo /usr/bin/python2.7 test_main.py")
+                    self.clean_log(name='tmp/Log.log')
+                    get('Logs/Log.log', '/tmp/Log.log')
+                    with open('/tmp/Log.log', "r") as input:
+                        with open("result.log", 'a') as output:
+                            for line in input:
+                                output.write(line)
 
                 if self.run_web:
                     if self.run_configurator:
@@ -251,13 +257,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
         if os.path.isfile(self.__logDir + VagrantAutomation.box_log):
             os.remove(self.__logDir + VagrantAutomation.box_log)
 
-    def clean_installation_agent_log(self):
-        if os.path.isfile("installation_agent.log"):
-            os.remove("installation_agent.log")
-
-    def clean_configuration_log(self):
-        if os.path.isfile("configuration.log"):
-            os.remove("configuration.log")
+    def clean_log(self, name):
+        if os.path.isfile(name):
+            os.remove(name)
 
     def write_in_box_log(self, message):
         self.message = message
@@ -299,8 +301,9 @@ if __name__ == '__main__':
     start = VagrantAutomation()
     start.read_cfg()
     start.clean_box_log()
-    start.clean_installation_agent_log()
-    start.clean_configuration_log()
+    start.clean_log(name='installation_agent.log')
+    start.clean_log(name='configuration.log')
+    start.clean_log(name='result.log')
     start.open_box_log()
     start.remove_log()
 
@@ -308,7 +311,7 @@ if __name__ == '__main__':
         print("VM NAME = ", vm)
         start.save_vmname(vm=vm)
         print(vm + " : executing....")
-        start.write_in_box_log(vm + " tests are comleted:" + '\n')
+        start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
         start.start_up()
         start.remove_archive()

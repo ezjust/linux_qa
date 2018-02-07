@@ -140,6 +140,7 @@ class TestRunner(object):
                     self.executor.log("Cleaning Up %s test ....\n" % key)
                     test.tearDown()
                     #self.executor.log("Done")
+                self.executor.log("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
                 print("Test %s is: %s\n" % (key, ('OK' if result is "passed" else 'FAIL')))
                 print("================================================================="
                       "\n"

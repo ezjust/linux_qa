@@ -58,22 +58,26 @@ class WebAgent(object):
 
     virtualbox = Virtualbox()
     execute = Executor()
+    #driver = webdriver.Firefox()
 
     def __init__(self):
         try:
+            # from pyvirtualdisplay import Display
+            # display = Display(visible=0, size=(800, 600))
+            # display.start()
+
             self.driver = webdriver.Firefox()
             try:
                 self.driver.set_page_load_timeout(30) #stopped work in the newest firefox. Before was ok.
-            except WebDriverException:
-                time.sleep(5)
-                pass
+            except WebDriverException as e:
+                print(e)
             #self.driver.implicitly_wait(30)
             self.driver.accept_untrusted_certs = True
             self.driver.assume_untrusted_cert_issuer = True
             self.driver.get(core_link)
             # self.driver.refresh()
-        except Exception:
-            print Exception
+        except Exception as e:
+            print e
 
     def open_core_ui(self):
         try:
