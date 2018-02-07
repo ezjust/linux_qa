@@ -157,12 +157,15 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         #sudo('zypper -n update -y', stdout=configuration_log)
                         #print(self.sles_packages)
                         #print('zypper install -n ' + self.sles_packages)
-                        sudo('zypper clean -M', stdout=configuration_log)
-                        sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
-                        #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
-                        sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
-                        sudo('pip install ' + self.pip_packages,
-                             stdout=configuration_log)
+                        try:
+                            sudo('zypper clean -M', stdout=configuration_log)
+                            sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
+                            #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
+                            sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
+                            sudo('pip install ' + self.pip_packages, stdout=configuration_log)
+                        except Exception as E:
+                            print(E)
+                            pass
 
 
                     sudo('uname -r')
