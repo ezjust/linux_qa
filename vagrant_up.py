@@ -163,6 +163,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                             #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
                             sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
                             sudo('pip install ' + self.pip_packages, stdout=configuration_log)
+                            sudo('pip install --upgrade pyOpenSSL')
                         except Exception as E:
                             print(E)
                             pass
