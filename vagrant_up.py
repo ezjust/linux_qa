@@ -330,8 +330,15 @@ if __name__ == '__main__':
         pass
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     with open('result.log') as f:
+        failed_result = False
+        test_word = ['FAIL', 'FAILED']
         for line in f:
             print(line)
+            if any(x in line for x in test_word):
+                failed_result = True
+    if failed_result:
+        raise Exception("There are failed tests.")
+
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     #start.close_log()
 
