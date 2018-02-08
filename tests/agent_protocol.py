@@ -26,12 +26,9 @@ class AgentProtocol(Agent):
 
 
     def runTest(self):
-        print('Test')
         self.check_agent_is_running()
-        print('Test2')
 
         if self.error_code(self.default_protocol) is not 0:
-            print(self.execute(self.default_protocol))
             raise Exception("%s return not '0' error code. This protocol should"
                              "be used by default." % self.default_protocol)# TLS1_2 should be used by default
 

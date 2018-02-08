@@ -332,7 +332,7 @@ if __name__ == '__main__':
     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     with open('result.log') as f:
         failed_result = False
-        test_word = ['FAIL', 'FAILED']
+        test_word = [': FAIL', 'Exception']
         failed_array = []
         for line in f:
             print(line)

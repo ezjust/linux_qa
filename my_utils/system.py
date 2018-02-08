@@ -632,6 +632,7 @@ class Agent(Repoinstall):
         The Exception will be received in case if after service restart the process is not listening the port."""
         if self.status_of_the_service('rapidrecovery-agent', None) is not 0:
             self.service_activity('rapidrecovery-agent', 'restart')
+            print('Agent is restarted in service_activity')
             self.status_of_the_service('rapidrecovery-agent', 0)
 
             counter = 0
@@ -642,7 +643,13 @@ class Agent(Repoinstall):
             if self.error_code('netstat -anp | grep mono') is not 0:
                 print(self.error_code('netstat -anp | grep mono'))
                 raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 30 sec did not help. Please investigate.")
-
+            '''There is some time, needed for the correct start of the agent service'''
+            counter = 0
+            while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 10:
+                time.sleep(0.5)
+            if self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0:
+                raise Exception("Exception: There is still not ability to connect to the 8006 port using openssl client."
+                                "Error code is %s" % self.error_code('echo YES | openssl s_client -connect localhost:8006'))
 
     def bsctl_hash(self):
         bsctl_hash = self.execute(self.bsctl_v)
