@@ -332,14 +332,19 @@ if __name__ == '__main__':
     with open('result.log') as f:
         failed_result = False
         test_word = ['FAIL', 'FAILED']
+        failed_array = []
         for line in f:
             print(line)
             if any(x in line for x in test_word):
+                failed_array.append(line)
                 failed_result = True
     if failed_result:
+        print("There are failed tests")
+        for i in failed_array:
+            print(i)
         raise Exception("There are failed tests.")
 
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print("Testing completed with no errors")
     #start.close_log()
 
 
