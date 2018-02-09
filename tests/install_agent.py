@@ -19,7 +19,9 @@ class InstallAgent(Repoinstall, SystemUtils):
     def runTest(self):
         # print("Start")
         if self.check_initd() == 'systemctl':
-            if self.install_distname() in ["ubuntu", "debian", "sles"] and self.version() not in ["17.04", "17.10", "9.0"]:
+            version = self.version().split(".")[0]
+            print(version)
+            if self.install_distname() in ["ubuntu", "debian", "sles"] and version not in ["17", "17", "9"]:
 
                 '''
                 There is difference in error code for the not-installed service in 17.04 and 16.04. 17.04, 17.10, debian 9 return error code 4, 16.04 return error code 3
