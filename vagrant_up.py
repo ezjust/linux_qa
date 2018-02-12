@@ -30,6 +30,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
     box_log = '/box.log'
     box_log_object = None
     env.password = "vagrant"
+    cp = ConfigParser.ConfigParser()
 
     def write_cfg(self, ipaddr, **kwargs):
         config = ConfigParser.ConfigParser()
@@ -40,7 +41,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
             config.write(configfile)
 
     def read_cfg(self, **kwargs):
-        self.cp = ConfigParser.ConfigParser()
+
         self.cp.readfp(open(config))
         self.deb_packages = self.cp.get('remote', 'deb_packages')
         self.rhel_packages = self.cp.get('remote', 'rhel_packages')
@@ -83,9 +84,11 @@ class VagrantAutomation(SystemUtils, TestRunner):
             return output
 
 #@task
+
+    @parallel   # Testing an ability to run tasks in parallel
     def start_up(self):
         """Starts the specified machine using vagrant"""
-        self.create_tar(work_path)
+        #self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
         if self.vagrant_up:
             try:
@@ -128,7 +131,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
-
+                        @parallel
                         def install_rhel_preparation():
                             sudo('yum update -y', stdout=configuration_log)
                             sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
@@ -191,6 +194,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
             try:
                 sudo('uname -r')
                 if self.run_test:
+                    self.create_tar(work_path)
                     put(work_path + tar_name, box_work_path + "/" + tar_name,
                         use_sudo=True)
                     #                run("chmod +x " + box_work_path + "/" + tar_name)
@@ -301,6 +305,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 
 if __name__ == '__main__':
+    from multiprocessing import Process, Queue, Pipe, Pool
     import datetime
     print(datetime.datetime.now().time())
     start = VagrantAutomation()
@@ -315,7 +320,9 @@ if __name__ == '__main__':
 
     print("Completed start")
 
-    for vm in start.os_list:
+    p = None
+    #for vm in start.os_list:
+    def test(vm):
         print(datetime.datetime.now().time())
         print("VM NAME = ", vm)
         start.save_vmname(vm=vm)
@@ -323,9 +330,30 @@ if __name__ == '__main__':
         start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
         print(datetime.datetime.now().time())
+        print("COMPLETED")
         start.start_up()
         start.remove_archive()
         start.parse_box_log()
+
+
+    print("STARTOSLIST ", start.os_list)
+    p_obj=[]
+    for vm in start.os_list:
+        p = Process(target=test, args=(vm,))
+        p.start()
+        print(p.pid)
+        p_obj.append(p)
+    for pid in p_obj:
+        print(pid.pid, pid.is_alive())
+        while pid.is_alive():
+            time.sleep(5)
+
+    print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+
+
+    #parent_conn.recv()
+    #p.join()
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     if start.run_web:
         #start.parse_installation_agent_log()
         pass
