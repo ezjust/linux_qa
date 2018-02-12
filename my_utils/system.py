@@ -310,7 +310,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         version = self.version()
         if "." in version: ## this check is needed for SLES 12 SP2. There is 12 version returned insted of 12.2
             version = version.rsplit('.')[0] + "." + version.rsplit('.')[1]
-        if distributive.lower() in "debian, ubuntu" and version in ["15.04", "16.04", "16.10", "17.04", "17.10", "8.0", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "9.0", "9.1", "9.2", "9.3"]:
+        if distributive.lower() in "debian, ubuntu" and version in ["15.04", "16.04", "16.10", "17.04", "17.10", "18.04", "8.0", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "9.0", "9.1", "9.2", "9.3"]:
             return "8"
         elif distributive.lower() in "debian, ubuntu" and version in ["12.04", "12.10", "14.04", "14.10", "7"]:
             return "7"

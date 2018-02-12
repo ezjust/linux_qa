@@ -34,12 +34,20 @@ Vagrant.configure("2") do |config|
 
   end
 
+
   config.vm.define "centos_74_x64" do |centos_74|
     centos_74.vm.box = "/var/lib/boxes/centos_74_x64.box"
     centos_74.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos_74.ssh.username = "vagrant"
     centos_74.ssh.password = "vagrant"
   end 
+
+  config.vm.define "ubuntu_18.04_x64" do |ubuntu_18|
+    ubuntu_18.vm.box = "/var/lib/boxes/ubuntu_18.04_x64.box"
+    ubuntu_18.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    ubuntu_18.ssh.username = "vagrant"
+    ubuntu_18.ssh.password = "vagrant"
+  end
 
   config.vm.define "ubuntu_17.04_efi" do |efi|
     efi.vm.box = "/var/lib/boxes/ubuntu_17.04_efi.box"
