@@ -57,6 +57,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
         self.reload_vm = self.cp.getboolean('vagrant', 'reload_vm')
         self.run_web = self.cp.getboolean('general', 'run_web')
         self.run_test = self.cp.getboolean('general', 'run_test')
+        self.multiprocess = self.cp.getboolean('general', 'multiprocess')
         self.run_configurator = self.cp.getboolean('general', 'run_configurator')
         self.install_agent = self.cp.getboolean('general', 'install_agent')
         self.vagrant_up = self.cp.getboolean('general', 'vagrant_up')
@@ -85,7 +86,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 #@task
 
-    @parallel   # Testing an ability to run tasks in parallel
+    #@parallel(pool_size=3)   # Testing an ability to run tasks in parallel
     def start_up(self):
         """Starts the specified machine using vagrant"""
         #self.create_tar(work_path)
@@ -105,7 +106,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         self.execute(cmd='sudo kill -9 ' + item) # kill of the pids - releted to the virtualbox machine. May affect not only Vagrant boxes.
 
                     try:
-                        v.destroy() # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
+                        v.destroy(vm_name=self.box_distro_name) # try to destroy all machines. If the were no machines for destroing returns non-0 exit code. For this case we are using try, except block.
                     except Exception as e:
                         print(e)
 
@@ -115,7 +116,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         raise Exception("I have no ability to start vagrant machine %s" % self.box_distro_name)
 
             print('1')
-            self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
+            #self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
+            self.executor.log("\n Running test on the : %s \n" % self.box_distro_name)
+
             print('2')
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
                 try:
@@ -131,7 +134,6 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         sudo('apt-get update', stdout=configuration_log)
                         sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
-                        @parallel
                         def install_rhel_preparation():
                             sudo('yum update -y', stdout=configuration_log)
                             sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
@@ -186,9 +188,13 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     v.reload(vm_name=self.box_distro_name)
                 except Exception as e:
                     print(e)
-                    disconnect_all()
-                    v.reload(vm_name=self.box_distro_name)
-                    pass
+                    #disconnect_all()
+                    try:
+                        v.reload(vm_name=self.box_distro_name)
+                    except Exception as e:
+                        print(e)
+                        print('Addition reload did not fix the issue.')
+                        pass
 
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
@@ -237,6 +243,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
                                 print("Testing is completed")
                         except Exception:
                             pass
+            except Exception as e:
+                print(e)
+                print("Got Exception in last block. Going to destroy vm %s", self.box_distro_name)
 
             finally:
 
@@ -306,8 +315,6 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 if __name__ == '__main__':
     from multiprocessing import Process, Queue, Pipe, Pool
-    import datetime
-    print(datetime.datetime.now().time())
     start = VagrantAutomation()
     start.read_cfg()
     start.clean_box_log()
@@ -316,37 +323,54 @@ if __name__ == '__main__':
     start.clean_log(name='result.log')
     start.open_box_log()
     #start.remove_log()
-    print(datetime.datetime.now().time())
 
-    print("Completed start")
-
-    p = None
-    #for vm in start.os_list:
+    # config = ConfigParser.ConfigParser()
+    # config.optionxform = str
+    # config.readfp(open(config_web))
     def test(vm):
-        print(datetime.datetime.now().time())
+        '''The function, which needs to be run for one instance to complete testing.
+        We will use flags to run multiprocess for the installation tests or single mode for integration web tests.'''
         print("VM NAME = ", vm)
-        start.save_vmname(vm=vm)
+        # start.save_vmname(vm=vm)
         print(vm + " : executing....")
         start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
-        print(datetime.datetime.now().time())
-        print("COMPLETED")
         start.start_up()
         start.remove_archive()
         start.parse_box_log()
 
+    if start.run_test and start.multiprocess and not start.run_web:
+        print('I am in Multiprocess')
+        p = None
+        #for vm in start.os_list:
+        print("STARTOSLIST ", start.os_list)
+        #p_obj=[]
+        try:
+            #for vm in start.os_list:
+                # p = Process(target=test, args=(vm,))
+                # p.start()
+            p = Pool(processes=3)
+            r = p.map(test, start.os_list)
 
-    print("STARTOSLIST ", start.os_list)
-    p_obj=[]
-    for vm in start.os_list:
-        p = Process(target=test, args=(vm,))
-        p.start()
-        print(p.pid)
-        p_obj.append(p)
-    for pid in p_obj:
-        print(pid.pid, pid.is_alive())
-        while pid.is_alive():
-            time.sleep(5)
+            #r.wait()
+        except KeyboardInterrupt:
+            p.join()
+            p.terminate()
+
+    else:
+        print('I am in SingleProcess')
+        for vm in start.os_list:
+            start.save_vmname(vm) # save the name of the running instance, needs to be used in web tests.
+            test(vm)
+
+
+
+    #     print(p.pid)
+    #     p_obj.append(p)
+    # for pid in p_obj:
+    #     print(pid.pid, pid.is_alive())
+    #     while pid.is_alive():
+    #         time.sleep(5)
 
     print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
 

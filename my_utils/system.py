@@ -51,6 +51,7 @@ class Executor(object):
     __logFile = None
     __debug = True
     distr = SystemUtils()
+    num = None
 
 
     def __init__(self, cmd=None):
@@ -162,6 +163,47 @@ class Executor(object):
         (output, err) = p.communicate()
         return (err)
 
+    def retry(num):
+        '''The decorator is used to avoid some errors on the installation stage:
+        TC build agent and during some period time agent may not be available. To avoid this we use decorator.
+        Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
+
+        def count(function):
+            def wrapper(*args, **kwargs):
+                counter = 0
+                result = False  # default result is set to False, to start new cycle
+                while not result and counter < num:
+                    try:
+                        if function(*args, **kwargs):
+                            result = True
+                            # print("True")
+                        else:
+                            # print('False2')
+                            raise Exception
+                    except Exception:
+                        result = False
+                        # print("False")
+                    finally:
+                        counter = counter + 1  # increment of the counyer
+                        time.sleep(20)  # timeout between retries
+
+            return wrapper
+
+        return count
+
+    @retry(num=10)
+    def run(self, cmd):  # here we describe the decorator for the running command
+        # on the installation process. 'cmd' is used to be parameter, which is
+        # received by the run command, which will be repeated each time it fails until counter is less 10
+        # We can use this run(cmd) function for all commands we would like to be used with retry
+        try:
+            self.execute(cmd)
+            # print("Execute True")
+            return True
+        except Exception:
+            print("The error message is : %s" % self.error_message(cmd))
+            return False
+
     def get_logfile(self):
         return self.__logFile
 
@@ -224,11 +266,11 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     link = None
     #su = SystemUtils()
     repo_path = os.getcwd() + "/repo"
-    print repo_path
     __ex = Executor()
     execute = __ex.execute
     error_code = __ex.error_code
     error_message = __ex.error_message
+    run = __ex.run
 
 
     # def __init__(self):
@@ -341,10 +383,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
     def run_repo_installer(self):
         install = "sudo " + self.packmanager() + " -i" + " repo"
-        self.execute(install)
+        self.run(cmd=install)
         if self.install_distname() != "sles":
             update = "sudo " + self.software_manager() + " update"
-            self.execute(update)
+            self.run(cmd=update)
 
     def install_agent_fromrepo(self):
         self.create_link()
@@ -370,12 +412,12 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                             result = False
                             #print("False")
                         finally:
-                            counter = counter + 1 # increment of the counyer
+                            counter = counter + 1 # increment of the counter
                             time.sleep(20) # timeout between retries
                 return wrapper
             return count
 
-        @retry(num=10)
+        @retry(num=20)
 
         def run(cmd):   # here we describe the decorator for the running command
                         # on the installation process. 'cmd' is used to be parameter, which is
