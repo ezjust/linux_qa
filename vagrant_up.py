@@ -150,7 +150,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         except Exception as E:
                             print(E)
                             time.sleep(15)
+                            print('Retry of the rhel_preparation() installation')
                             install_rhel_preparation()
+                            pass
 
                     elif box_distro_name in ('sles', 'suse'):
                         #sudo('zypper rr 2', stdout=configuration_log, shell=False)
@@ -315,6 +317,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 if __name__ == '__main__':
     from multiprocessing import Process, Queue, Pipe, Pool
+    import traceback
     start = VagrantAutomation()
     start.read_cfg()
     start.clean_box_log()
@@ -345,12 +348,20 @@ if __name__ == '__main__':
         #for vm in start.os_list:
         print("STARTOSLIST ", start.os_list)
         #p_obj=[]
+
+        def process_file_wrapped(vm):
+            try:
+                test(vm)
+            except:
+                print('%s: %s' % (vm, traceback.format_exc()))
+
+
         try:
             #for vm in start.os_list:
                 # p = Process(target=test, args=(vm,))
                 # p.start()
             p = Pool(processes=3)
-            r = p.map(test, start.os_list)
+            r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list
 
             #r.wait()
         except KeyboardInterrupt:
