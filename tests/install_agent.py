@@ -20,7 +20,7 @@ class InstallAgent(Repoinstall, SystemUtils):
         # print("Start")
         if self.check_initd() == 'systemctl':
             version = self.version().split(".")[0]
-            print(version)
+            # print(version)
             if self.install_distname() in ["ubuntu", "debian", "sles"] and version not in ["18", "17", "9"]:
 
                 '''
@@ -34,7 +34,7 @@ class InstallAgent(Repoinstall, SystemUtils):
             self.install_agent_fromrepo()
             self.check_package_installed('rapidrecovery-repo', expected_result=True)
             self.check_package_installed('rapidrecovery-agent', expected_result=True)
-            print("2")
+            # print("2")
             self.check_package_installed('rapidrecovery-mono', expected_result=True)
             self.check_package_installed('dkms', expected_result=True)
             if self.install_distname() in ["ubuntu", "debian"]:
@@ -46,7 +46,7 @@ class InstallAgent(Repoinstall, SystemUtils):
                 self.status_of_the_service('rapidrecovery-vdisk',
                                            3)  # rapidrecovery-vdisk should be started right after install. DPKG systems.
             else:
-                print('4')
+                # print('4')
                 self.status_of_the_service('rapidrecovery-agent', 3) # rapidrecovery-agent should not be started right after install. It should be started only after configuring.
                 # print("3")
                 self.status_of_the_service('rapidrecovery-mapper', 3) # rapidrecovery-mapper should not be started right after install. It should be started only after configuring.

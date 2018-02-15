@@ -689,6 +689,8 @@ class Agent(Repoinstall):
             counter = 0
             while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 10:
                 time.sleep(0.5)
+                counter = counter + 1
+                print('waiting for the openssl')
             if self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0:
                 raise Exception("Exception: There is still not ability to connect to the 8006 port using openssl client."
                                 "Error code is %s" % self.error_code('echo YES | openssl s_client -connect localhost:8006'))
