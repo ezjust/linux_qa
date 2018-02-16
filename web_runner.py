@@ -78,7 +78,6 @@ class TestRunner(object):
 
     def write_log(self, message):
         self.message = message
-        print("Wrote")
         result_log = open("result.log", 'a+')
         result_log.write(self.message)
         result_log.close()

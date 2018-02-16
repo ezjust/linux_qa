@@ -62,7 +62,7 @@ class Executor(object):
             cls.__instance = super(Executor, cls).__new__(cls)
             if not os.path.exists(cls.__logDir):
                 os.mkdir(cls.__logDir)
-            cls.__logFile = open(cls.__logDir + "/Log.log", "w+")
+            cls.__logFile = open(cls.__logDir + "/Log.log", "a+")
         return cls.__instance
 
     def package_manager(self):
@@ -223,7 +223,7 @@ class Executor(object):
         else:
             ts = ""
         self.__logFile.write("%s%s" % (ts, string))
-        self.__logFile.flush()
+        self.__logFile.flush() # changed from the flush() to close(). Needs to be tested before apply.
 
 
     def ssh_execution(self, SSH_ADDRESS, SSH_USERNAME, SSH_PASSWORD, SSH_COMMAND):
@@ -678,19 +678,19 @@ class Agent(Repoinstall):
             self.status_of_the_service('rapidrecovery-agent', 0)
 
             counter = 0
-            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 60:
+            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 120:
                 time.sleep(0.5)
                 counter = counter + 1
             print('Stage1')
             if self.error_code('netstat -anp | grep mono') is not 0:
                 print(self.error_code('netstat -anp | grep mono'))
-                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 30 sec did not help. Please investigate.")
+                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 60 sec did not help. Please investigate.")
             '''There is some time, needed for the correct start of the agent service'''
             counter = 0
-            while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 10:
+            while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 100:
                 time.sleep(0.5)
                 counter = counter + 1
-                print('waiting for the openssl')
+                #print('waiting for the openssl')
             if self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0:
                 raise Exception("Exception: There is still not ability to connect to the 8006 port using openssl client."
                                 "Error code is %s" % self.error_code('echo YES | openssl s_client -connect localhost:8006'))

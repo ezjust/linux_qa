@@ -212,7 +212,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     self.clean_log(name='tmp/Log.log')
                     get('Logs/Log.log', '/tmp/Log.log')
                     with open('/tmp/Log.log', "r") as input:
-                        with open("result.log", 'a') as output:
+                        with open("result.log", 'a+') as output:
                             for line in input:
                                 output.write(line)
 
@@ -324,6 +324,7 @@ if __name__ == '__main__':
     start.clean_log(name='installation_agent.log')
     start.clean_log(name='configuration.log')
     start.clean_log(name='result.log')
+    start.clean_log(name='/tmp/Log.log')
     start.open_box_log()
     #start.remove_log()
 
