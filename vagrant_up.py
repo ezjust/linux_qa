@@ -115,11 +115,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     except Exception:
                         raise Exception("I have no ability to start vagrant machine %s" % self.box_distro_name)
 
-            print('1')
             #self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
-            self.executor.log("\n Running test on the : %s \n" % self.box_distro_name)
 
-            print('2')
             with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
                 try:
                     box_distro = self.box_distro_name.split('_')
@@ -208,6 +205,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     #                run("chmod +x " + box_work_path + "/" + tar_name)
                     run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
                     run("cd " + box_work_path, stdout=configuration_log)
+                    file_to_write = 'Logs/Log.log'
+                    run("echo Running tests on the : %s >> %s" % (self.box_distro_name, file_to_write))
                     run("sudo /usr/bin/python2.7 test_main.py")
                     self.clean_log(name='tmp/Log.log')
                     get('Logs/Log.log', '/tmp/Log.log')
@@ -284,6 +283,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
         self.message = message
         self.box_log_object.write(self.message)
 
+
     def parse_box_log(self):
         with open(self.__logDir + VagrantAutomation.box_log, 'r') as test_log:
             words = ["OK", "FAIL", "completed", "Executing"]
@@ -301,7 +301,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     print(line)
 
     def remove_archive(self):
-        os.remove(work_path + tar_name)
+        if os.path.isfile(work_path + tar_name):
+            os.remove(work_path + tar_name)
 
     def save_vmname(self, vm=None, **kwargs):
         if vm is not None:
@@ -325,6 +326,7 @@ if __name__ == '__main__':
     start.clean_log(name='configuration.log')
     start.clean_log(name='result.log')
     start.clean_log(name='/tmp/Log.log')
+    start.clean_log(name='Logs/Log.log')
     start.open_box_log()
     #start.remove_log()
 

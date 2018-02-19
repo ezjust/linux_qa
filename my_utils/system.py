@@ -62,7 +62,7 @@ class Executor(object):
             cls.__instance = super(Executor, cls).__new__(cls)
             if not os.path.exists(cls.__logDir):
                 os.mkdir(cls.__logDir)
-            cls.__logFile = open(cls.__logDir + "/Log.log", "a+")
+            cls.__logFile = open(cls.__logDir + "/Log.log", "a")
         return cls.__instance
 
     def package_manager(self):
@@ -679,7 +679,7 @@ class Agent(Repoinstall):
 
             counter = 0
             while self.error_code('netstat -anp | grep mono') is not 0 and counter < 120:
-                time.sleep(0.5)
+                time.sleep(1)
                 counter = counter + 1
             print('Stage1')
             if self.error_code('netstat -anp | grep mono') is not 0:
@@ -734,7 +734,7 @@ class Agent(Repoinstall):
         :return: True/False
         '''
         if build:
-            print("Buiild = %s " % build)
+            print("Build = %s " % build)
             self.build = build
         if port:
             self.port = port

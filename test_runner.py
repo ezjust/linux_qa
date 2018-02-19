@@ -90,6 +90,7 @@ class TestRunner(object):
         self.test_list = dict(self.conf_parser.items("tests"))
 
 
+
     def setup(self):
         self.get_tests_list()
 
