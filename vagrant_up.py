@@ -85,7 +85,6 @@ class VagrantAutomation(SystemUtils, TestRunner):
             return output
 
 #@task
-
     #@parallel(pool_size=3)   # Testing an ability to run tasks in parallel
     def start_up(self):
         """Starts the specified machine using vagrant"""
@@ -317,6 +316,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
 
 if __name__ == '__main__':
+    from datetime import datetime
+    print('The start time is: ', datetime.now())
     from multiprocessing import Process, Queue, Pipe, Pool
     import traceback
     start = VagrantAutomation()
@@ -352,13 +353,17 @@ if __name__ == '__main__':
         print("STARTOSLIST ", start.os_list)
         #p_obj=[]
 
+        #@start.executor.retry()
         def process_file_wrapped(vm):
             try:
                 test(vm)
             except:
                 print('%s: %s' % (vm, traceback.format_exc()))
-
-
+                print('I am in Exception of the Multiprocess. Needs to be rerun by the decorator.')
+                @start.executor.retry()
+                def a():
+                    test(vm)
+                a
         try:
             #for vm in start.os_list:
                 # p = Process(target=test, args=(vm,))
@@ -405,6 +410,7 @@ if __name__ == '__main__':
             if any(x in line for x in test_word):
                 failed_array.append(line)
                 failed_result = True
+    print('The end time is: ', datetime.now())
     if failed_result:
         print("There are failed tests")
         for i in failed_array:

@@ -35,8 +35,8 @@ class AgentCommands(Agent):
                     # print(self.counter)
                 self.status_of_the_service('rapidrecovery-vdisk', 0)
             if self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
-                if self.error_code_of_the_service('rapidrecovery-vdisk') is not 0:
-                    raise Exception("The vdisk is not started by default after agent installation")
+                if self.error_code_of_the_service('rapidrecovery-vdisk') is 0:
+                    raise Exception("The vdisk is started by default after agent installation. For rpm systems we should not start it after installation.")
                 self.rapidrecovery_config_api(build="all")
                 self.service_activity('rapidrecovery-vdisk', 'restart')
                 self.counter = 0

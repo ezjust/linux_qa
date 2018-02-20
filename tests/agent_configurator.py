@@ -31,6 +31,7 @@ class AgentConfigurator(Agent):
 
     def tearDown(self):
         self.uninstall_agent()
+        self.unload_module()
 
 
     def runTest(self):
