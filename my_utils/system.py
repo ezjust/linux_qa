@@ -463,21 +463,21 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         if self.check_installed_code_rapid() is 0:
             if self.install_distname() == "sles":
                 uninstallation_agent = self.software_manager() + " remove" + " -y" + " " + self.agent
-                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*" + " nbd"
+                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*"
+                uninstallation_nbd = self.software_manager() + " remove" + " -y" + " nbd"
             else:
                 uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
-                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*" + " nbd"
+                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
+                uninstallation_nbd = self.software_manager() + " -y" + " remove" + " nbd"
+
             self.execute(uninstallation_agent)
-            not_removed = self.execute(
-                self.software_manager() + " | grep rapid | awk '{print $2}'")[
-                0][0]
-            not_removed_dkms = self.execute(
-                self.software_manager() + " | grep dkms | awk '{print $2}'")[
-                0][0]
+            not_removed_nbd = self.error_code("lsmod | grep nbd")
+
             if self.check_installed_code_rapid() is 0:
                 self.execute(unistallation_other)
-            not_removed = self.execute(self.software_manager() + " | grep rapid | awk '{print $2}'")[0][0]
-            not_removed_dkms = self.execute(self.software_manager() + " | grep dkms | awk '{print $2}'")[0][0]
+
+            if not_removed_nbd is 0:
+                self.run(cmd=uninstallation_nbd)
 
             if self.status_of_the_service(cmd='rapidrecovery-agent', code=None) is 0:
                 self.service_activity(cmd='rapidrecovery-agent', action='stop')

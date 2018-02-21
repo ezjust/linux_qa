@@ -1,6 +1,6 @@
 from __future__ import print_function, with_statement
 from web_runner import *
-from my_utils.system import SystemUtils
+from my_utils.system import SystemUtils, retry_call
 import vagrant
 from fabric.api import *
 from fabric.network import disconnect_all
@@ -122,13 +122,28 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     box_distro_name = box_distro[0]
                     print("Install environment is in progress...")
                     if box_distro_name in ('ubuntu', 'debian'):
-                        clean = "echo `ps -A | grep apt | awk '{print $1}'`"
-                        result_clean = run(clean)
-                        if len(result_clean) is not 0:
-                            sudo(stderr=False, command='kill -9 ' + result_clean)
-                        sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
-                        sudo('apt-get update', stdout=configuration_log)
-                        sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+
+                        @retry_call(2)
+                        def prepare_deb():
+                            try:
+                                clean = "echo `ps -A | grep apt | awk '{print $1}'`"
+                                result_clean = run(clean)
+                                if len(result_clean) is not 0:
+                                    sudo(stderr=False, command='kill -9 ' + result_clean)
+                                sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
+                                sudo('apt-get update', stdout=configuration_log)
+                                sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+                                return True
+                            except Exception as e:
+                                print(e)
+                                return False
+
+                        try:
+                            prepare_deb()
+                        except Exception as e:
+                            print(e)
+                            prepare_deb()
+
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
                         def install_rhel_preparation():
                             sudo('yum update -y', stdout=configuration_log)
@@ -349,21 +364,31 @@ if __name__ == '__main__':
     if start.run_test and start.multiprocess and not start.run_web:
         print('I am in Multiprocess')
         p = None
+        #global tested_os
+        #tested_os = None
         #for vm in start.os_list:
         print("STARTOSLIST ", start.os_list)
         #p_obj=[]
 
+        @retry_call(3)
+        def letstry(self, tested_os):
+            try:
+                print('I ma inside of the decorator function, the name of tested_os: ', tested_os)
+                test(tested_os)
+                return True
+            except Exception:
+                return False
+
         #@start.executor.retry()
         def process_file_wrapped(vm):
             try:
+                global tested_os
+                tested_os = vm # will be used to shift the vm name
                 test(vm)
             except:
                 print('%s: %s' % (vm, traceback.format_exc()))
                 print('I am in Exception of the Multiprocess. Needs to be rerun by the decorator.')
-                @start.executor.retry()
-                def a():
-                    test(vm)
-                a
+                letstry(tested_os)
         try:
             #for vm in start.os_list:
                 # p = Process(target=test, args=(vm,))
