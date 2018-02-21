@@ -10,6 +10,37 @@ import sys
 import paramiko
 
 
+def retry_call(num):
+    '''The decorator is used to avoid some errors on the installation stage:
+    TC build agent and during some period time agent may not be available. To avoid this we use decorator.
+    Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
+
+    def count(function):
+        def wrapper(*args, **kwargs):
+            counter = 0
+            result = False  # default result is set to False, to start new cycle
+            while not result and counter < num:
+                try:
+                    if function(*args, **kwargs):
+                        result = True
+                        # print("True")
+                    else:
+                        # print('False2')
+                        raise Exception
+                except Exception:
+                    result = False
+                    # print("False")
+                finally:
+                    counter = counter + 1  # increment of the counyer
+                    time.sleep(20)  # timeout between retries
+
+        return wrapper
+
+    return count
+
+
+
+
 
 class SystemUtils(object):
     #distname = None
@@ -163,35 +194,7 @@ class Executor(object):
         (output, err) = p.communicate()
         return (err)
 
-    def retry(num):
-        '''The decorator is used to avoid some errors on the installation stage:
-        TC build agent and during some period time agent may not be available. To avoid this we use decorator.
-        Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
-
-        def count(function):
-            def wrapper(*args, **kwargs):
-                counter = 0
-                result = False  # default result is set to False, to start new cycle
-                while not result and counter < num:
-                    try:
-                        if function(*args, **kwargs):
-                            result = True
-                            # print("True")
-                        else:
-                            # print('False2')
-                            raise Exception
-                    except Exception:
-                        result = False
-                        # print("False")
-                    finally:
-                        counter = counter + 1  # increment of the counyer
-                        time.sleep(20)  # timeout between retries
-
-            return wrapper
-
-        return count
-
-    @retry(num=10)
+    @retry_call(10)
     def run(self, cmd):  # here we describe the decorator for the running command
         # on the installation process. 'cmd' is used to be parameter, which is
         # received by the run command, which will be repeated each time it fails until counter is less 10
@@ -392,33 +395,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         self.create_link()
         self.download_file()
 
-        def retry(num):
-            '''The decorator is used to avoid some errors on the installation stage:
-            TC build agent and during some period time agent may not be available. To avoid this we use decorator.
-            Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
-            def count(function):
-                def wrapper(*args, **kwargs):
-                    counter = 0
-                    result = False # default result is set to False, to start new cycle
-                    while not result and counter < num:
-                        try:
-                            if function(*args, **kwargs):
-                                result = True
-                                #print("True")
-                            else:
-                                #print('False2')
-                                raise Exception
-                        except Exception:
-                            result = False
-                            #print("False")
-                        finally:
-                            counter = counter + 1 # increment of the counter
-                            time.sleep(20) # timeout between retries
-                return wrapper
-            return count
-
-        @retry(num=20)
-
+        @retry_call(num=20)
         def run(cmd):   # here we describe the decorator for the running command
                         # on the installation process. 'cmd' is used to be parameter, which is
                         # received by the run command, which will be repeated each time it fails until counter is less 10
@@ -486,10 +463,10 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         if self.check_installed_code_rapid() is 0:
             if self.install_distname() == "sles":
                 uninstallation_agent = self.software_manager() + " remove" + " -y" + " " + self.agent
-                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*"
+                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*" + " nbd"
             else:
                 uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
-                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
+                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*" + " nbd"
             self.execute(uninstallation_agent)
             not_removed = self.execute(
                 self.software_manager() + " | grep rapid | awk '{print $2}'")[

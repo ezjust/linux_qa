@@ -37,6 +37,7 @@ class AgentCommands(Agent):
             if self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
                 if self.error_code_of_the_service('rapidrecovery-vdisk') is 0:
                     raise Exception("The vdisk is started by default after agent installation. For rpm systems we should not start it after installation.")
+                    #The nbd package is needed for the rapidrecovery-vdisk and nbd should be built only when module is build.
                 self.rapidrecovery_config_api(build="all")
                 self.service_activity('rapidrecovery-vdisk', 'restart')
                 self.counter = 0
