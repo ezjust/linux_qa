@@ -90,6 +90,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
         """Starts the specified machine using vagrant"""
         #self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
+        #
         if self.vagrant_up:
             try:
                 v.up(vm_name=self.box_distro_name)
@@ -115,8 +116,9 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         raise Exception("I have no ability to start vagrant machine %s" % self.box_distro_name)
 
             #self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
-
-            with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
+            # added: timeout=30, connection_attempts=5, no_agent=True, allow_agent=False,look_for_keys=False, warn_only=True
+            
+            with settings(timeout=30, connection_attempts=5, no_agent=True, allow_agent=False,look_for_keys=False, host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True, warn_only=True):
                 try:
                     box_distro = self.box_distro_name.split('_')
                     box_distro_name = box_distro[0]
