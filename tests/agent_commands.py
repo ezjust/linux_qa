@@ -35,11 +35,16 @@ class AgentCommands(Agent):
                     # print(self.counter)
                 self.status_of_the_service('rapidrecovery-vdisk', 0)
             if self.install_distname() in ["rhel", "centos", "oracle", "sles", "suse"]:
-                if self.error_code_of_the_service('rapidrecovery-vdisk') is 0:
+
+                if self.error_code_of_the_service('rapidrecovery-vdisk') is 0 and self.check_initd() is "/etc/init.d":
                     raise Exception("The vdisk is started by default after agent installation. For rpm systems we should not start it after installation.")
                     #The nbd package is needed for the rapidrecovery-vdisk and nbd should be built only when module is build.
+
                 self.rapidrecovery_config_api(build="all")
+
                 self.service_activity('rapidrecovery-vdisk', 'restart')
+                # When vdisk or agent is restarted on the systemd, the opotent should be restarted by the dependence too.
+
                 self.counter = 0
                 while self.error_code_of_the_service('rapidrecovery-vdisk') is not 0 and self.counter <= 12:
                     time.sleep(5)

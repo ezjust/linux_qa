@@ -16,23 +16,19 @@ def retry_call(num):
     Decorator use additional function(def count(function)) to use 'num' parameters with the amount of the retries to apply'''
 
     def count(function):
+
         def wrapper(*args, **kwargs):
+            # Needs to test the case, when function is True from the first try, than here we need to return
             counter = 0
             result = False  # default result is set to False, to start new cycle
             while not result and counter < num:
-                try:
-                    if function(*args, **kwargs):
-                        result = True
-                        # print("True")
-                    else:
-                        # print('False2')
-                        raise Exception
-                except Exception:
+                if function(*args, **kwargs):
+                    result = True
+                else:
                     result = False
-                    # print("False")
-                finally:
-                    counter = counter + 1  # increment of the counyer
-                    time.sleep(20)  # timeout between retries
+                    time.sleep(20) # timeout between retries
+
+                counter = counter + 1  # increment of the counyer
 
         return wrapper
 
@@ -470,13 +466,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
                 uninstallation_nbd = self.software_manager() + " -y" + " remove" + " nbd"
 
-            self.execute(uninstallation_agent)
-            not_removed_nbd = self.error_code("lsmod | grep nbd")
+            if self.check_installed_code_rapid() is 0:
+                self.execute(cmd=uninstallation_agent)
 
             if self.check_installed_code_rapid() is 0:
-                self.execute(unistallation_other)
+                self.execute(cmd=unistallation_other)
 
-            if not_removed_nbd is 0:
+            if self.error_code(cmd=self.installed_package() + " | grep nbd") is 0:
                 self.run(cmd=uninstallation_nbd)
 
             if self.status_of_the_service(cmd='rapidrecovery-agent', code=None) is 0:
@@ -484,8 +480,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
                 if self.status_of_the_service(cmd='rapidrecovery-agent', code=None) is 0:
                     raise Exception('The agent code is "0" even after "stop" service option')
 
+            if self.status_of_the_service(cmd='rapidrecovery-vdisk', code=None) is 0:
+                self.service_activity(cmd='rapidrecovery-vdisk', action='stop')
+                if self.status_of_the_service(cmd='rapidrecovery-vdisk', code=None) is 0:
+                    raise Exception('The vdisk code is "0" even after "stop" service option')
 
-            # print("completed uninstall agent")
+
+                            # print("completed uninstall agent")
 
     def uninstall_autoremove(self):
         execute = Executor()

@@ -117,7 +117,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
             #self.write_log(message="\n Running test on the : %s \n" % self.box_distro_name)
             # added: timeout=30, connection_attempts=5, no_agent=True, allow_agent=False,look_for_keys=False, warn_only=True
-            
+
             with settings(timeout=30, connection_attempts=5, no_agent=True, allow_agent=False,look_for_keys=False, host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True, warn_only=True):
                 try:
                     box_distro = self.box_distro_name.split('_')
@@ -135,15 +135,15 @@ class VagrantAutomation(SystemUtils, TestRunner):
                                 sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
                                 sudo('apt-get update', stdout=configuration_log)
                                 sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
-                                return True
                             except Exception as e:
                                 print(e)
-                                return False
 
                         try:
                             prepare_deb()
                         except Exception as e:
                             print(e)
+                            time.sleep(10)
+                            print('Retry of the deb_preparation() installation')
                             prepare_deb()
 
                     elif box_distro_name in ('rhel', 'centos', 'sl'):
