@@ -1,42 +1,54 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-lfs_disk1 = './tmp/disk1.vdi'
-lfs_disk2 = './tmp/disk2.vdi'
-lfs_disk3 = './tmp/disk3.vdi'
-lfs_disk4 = './tmp/disk4.vdi'
-lfs_disk5 = './tmp/disk5.vdi'
+#lfs_disk1 = './tmp/disk1.vdi'
+#lfs_disk2 = './tmp/disk2.vdi'
+#lfs_disk3 = './tmp/disk3.vdi'
+#lfs_disk4 = './tmp/disk4.vdi'
+#lfs_disk5 = './tmp/disk5.vdi'
 
 Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 2
     v.gui = false
-    unless File.exist?(lfs_disk1)
-        v.customize ['createhd', '--filename', lfs_disk1, '--size', 10 * 1024]
-    end
-    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', lfs_disk1]
-    unless File.exist?(lfs_disk2)
-        v.customize ['createhd', '--filename', lfs_disk2, '--size', 10 * 1024]
-    end
-    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', lfs_disk2]
-    unless File.exist?(lfs_disk3)
-        v.customize ['createhd', '--filename', lfs_disk3, '--size', 10 * 1024]
-    end
-    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 3, '--device', 0, '--type', 'hdd', '--medium', lfs_disk3]
-    unless File.exist?(lfs_disk4)
-        v.customize ['createhd', '--filename', lfs_disk4, '--size', 10 * 1024]
-    end
-    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 4, '--device', 0, '--type', 'hdd', '--medium', lfs_disk4]
-    unless File.exist?(lfs_disk5)
-        v.customize ['createhd', '--filename', lfs_disk5, '--size', 10 * 1024]
-    end
-    v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 5, '--device', 0, '--type', 'hdd', '--medium', lfs_disk5]
+    #unless File.exist?(lfs_disk1)
+    #    v.customize ['createhd', '--filename', lfs_disk1, '--size', 10 * 1024]
+    #end
+    #v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', lfs_disk1]
+    #unless File.exist?(lfs_disk2)
+    #    v.customize ['createhd', '--filename', lfs_disk2, '--size', 10 * 1024]
+    #end
+    #v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', lfs_disk2]
+    #unless File.exist?(lfs_disk3)
+    #    v.customize ['createhd', '--filename', lfs_disk3, '--size', 10 * 1024]
+    #end
+    #v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 3, '--device', 0, '--type', 'hdd', '--medium', lfs_disk3]
+    #unless File.exist?(lfs_disk4)
+    #    v.customize ['createhd', '--filename', lfs_disk4, '--size', 10 * 1024]
+    #end
+    #v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 4, '--device', 0, '--type', 'hdd', '--medium', lfs_disk4]
+    #unless File.exist?(lfs_disk5)
+    #    v.customize ['createhd', '--filename', lfs_disk5, '--size', 10 * 1024]
+    #end
+    #v.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 5, '--device', 0, '--type', 'hdd', '--medium', lfs_disk5]
 
   end
 
-
+  config.vm.define "oracle_69_x64" do |oracle_69|
+    oracle_69.vm.box = "/var/lib/boxes/oracle_69_x64.box"
+    oracle_69.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    oracle_69.ssh.username = "vagrant"
+    oracle_69.ssh.password = "vagrant"
+  end
+  config.vm.define "oracle_74_x64" do |oracle_74|
+    oracle_74.vm.box = "/var/lib/boxes/oracle_74_x64.box"
+    oracle_74.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
+    oracle_74.ssh.username = "vagrant"
+    oracle_74.ssh.password = "vagrant"
+  end
   config.vm.define "centos_74_x64" do |centos_74|
     centos_74.vm.box = "/var/lib/boxes/centos_74_x64.box"
+    centos_74.vm.hostname = "centos74x64"
     centos_74.vm.network "public_network", bridge: "enp3s0", type: "dhcp"
     centos_74.ssh.username = "vagrant"
     centos_74.ssh.password = "vagrant"

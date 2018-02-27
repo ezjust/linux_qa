@@ -656,13 +656,13 @@ class Agent(Repoinstall):
             self.status_of_the_service('rapidrecovery-agent', 0)
 
             counter = 0
-            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 120:
+            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 180:
                 time.sleep(1)
                 counter = counter + 1
             print('Stage1')
             if self.error_code('netstat -anp | grep mono') is not 0:
                 print(self.error_code('netstat -anp | grep mono'))
-                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 60 sec did not help. Please investigate.")
+                raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 180 sec did not help. Please investigate.")
             '''There is some time, needed for the correct start of the agent service'''
             counter = 0
             while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 100:

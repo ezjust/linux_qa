@@ -146,7 +146,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                             print('Retry of the deb_preparation() installation')
                             prepare_deb()
 
-                    elif box_distro_name in ('rhel', 'centos', 'sl'):
+                    elif box_distro_name in ('rhel', 'centos', 'sl', 'oracle'):
                         def install_rhel_preparation():
                             sudo('yum update -y', stdout=configuration_log)
                             sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
@@ -373,7 +373,7 @@ if __name__ == '__main__':
         #p_obj=[]
 
         @retry_call(3)
-        def letstry(self, tested_os):
+        def letstry(tested_os):
             try:
                 print('I ma inside of the decorator function, the name of tested_os: ', tested_os)
                 test(tested_os)
