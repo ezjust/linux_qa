@@ -30,6 +30,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
     box_log = '/box.log'
     box_log_object = None
     env.password = "vagrant"
+    testing_result = None
     cp = ConfigParser.ConfigParser()
 
     def write_cfg(self, ipaddr, **kwargs):
@@ -148,14 +149,25 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
                     elif box_distro_name in ('rhel', 'centos', 'sl', 'oracle'):
                         def install_rhel_preparation():
-                            sudo('yum update -y', stdout=configuration_log)
-                            sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                            sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
-                            sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
-                            sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
-                            sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
-                            sudo('pip install --upgrade pip', stdout=configuration_log)
-                            if box_distro[1] in ('6'):
+                            if box_distro_name in ('oracle_69_x64'):
+                                sudo('wget http://vault.centos.org/6.9/extras/Source/SPackages/centos-release-scl-rh-2-3.el6.centos.src.rpm', stdout=configuration_log)
+                                sudo('rpm -i centos-release-scl-rh-2-3.el6.centos.src.rpm', stdout=configuration_log)
+                                sudo('yum install -y yum-utils', stdout=configuration_log)
+                                sudo('yum-config-manager --enable "Software Collection Library release 2.3 packages for Oracle Linux 6 (x86_64)"', stdout=configuration_log)
+                                sudo('yum install -y python27', stdout=configuration_log)
+                                #run('scl enable python27 bash')
+                                sudo('scl enable python27 "easy_install-2.7 pip"', stdout=configuration_log)
+                                sudo('ln -s `which python` /usr/bin/python2.7', stdout=configuration_log)
+                                sudo('echo ln -s `which python` /usr/bin/python2.7 >> /etc/rc.local', stdout=configuration_log)
+                            else:
+                                sudo('yum update -y', stdout=configuration_log)
+                                sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                                sudo('yum --disablerepo=epel -y update  ca-certificates', stdout=configuration_log)
+                                sudo('yum install -y ' + self.rhel_packages, stdout=configuration_log)
+                                sudo('wget https://bootstrap.pypa.io/get-pip.py', stdout=configuration_log)
+                                sudo('/usr/bin/python2.7 get-pip.py', stdout=configuration_log)
+                                sudo('pip install --upgrade pip', stdout=configuration_log)
+                            if box_distro[1] in ('6') and box_distro_name in ('rhel', 'centos', 'sl'):
                                 sudo('/usr/bin/python2.7 /usr/local/bin/pip2.7 install ' + self.pip_packages, stdout=configuration_log)
                             else: sudo('pip install ' + self.pip_packages, stdout=configuration_log)
                         try:
@@ -215,21 +227,25 @@ class VagrantAutomation(SystemUtils, TestRunner):
             try:
                 sudo('uname -r')
                 if self.run_test:
-                    self.create_tar(work_path)
-                    put(work_path + tar_name, box_work_path + "/" + tar_name,
-                        use_sudo=True)
-                    #                run("chmod +x " + box_work_path + "/" + tar_name)
-                    run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
-                    run("cd " + box_work_path, stdout=configuration_log)
-                    file_to_write = 'Logs/Log.log'
-                    run("echo Running tests on the : %s >> %s" % (self.box_distro_name, file_to_write))
-                    run("sudo /usr/bin/python2.7 test_main.py")
-                    self.clean_log(name='tmp/Log.log')
-                    get('Logs/Log.log', '/tmp/Log.log')
-                    with open('/tmp/Log.log', "r") as input:
-                        with open("result.log", 'a+') as output:
-                            for line in input:
-                                output.write(line)
+                    try:
+                        self.create_tar(work_path)
+                        put(work_path + tar_name, box_work_path + "/" + tar_name,
+                            use_sudo=True)
+                        #                run("chmod +x " + box_work_path + "/" + tar_name)
+                        run("tar -xf " + box_work_path + "/" + tar_name, stdout=configuration_log)
+                        run("cd " + box_work_path, stdout=configuration_log)
+                        file_to_write = 'Logs/Log.log'
+                        run("echo Running tests on the : %s >> %s" % (self.box_distro_name, file_to_write))
+                        run("sudo /usr/bin/python2.7 test_main.py")
+                        self.clean_log(name='tmp/Log.log')
+                        get('Logs/Log.log', '/tmp/Log.log')
+                        with open('/tmp/Log.log', "r") as input:
+                            with open("result.log", 'a+') as output:
+                                for line in input:
+                                    output.write(line)
+                    except Exception as e:
+                        print(e)
+                        self.testing_result = False
 
                 if self.run_web:
                     if self.run_configurator:
@@ -259,10 +275,12 @@ class VagrantAutomation(SystemUtils, TestRunner):
                                 os.system("sudo /usr/bin/python2.7 web_runner.py")
                                 print("Testing is completed")
                         except Exception:
+                            self.testing_result = False
                             pass
             except Exception as e:
                 print(e)
                 print("Got Exception in last block. Going to destroy vm %s", self.box_distro_name)
+                pass
 
             finally:
 
@@ -271,6 +289,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                     try:
                         v.destroy(vm_name=self.box_distro_name)
                     except Exception as e:
+                        print('disconnect_all() will be called')
                         print(e)
                         disconnect_all()
                         v.destroy(vm_name=self.box_distro_name)
@@ -282,6 +301,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
                       "\n"
                       "------------------------------------------------------------------------------------------------------------------")
 
+        if self.testing_result is False:
+            raise Exception('Failed test execution')
 
     def open_box_log(self):
         self.box_log_object = open(self.__logDir + VagrantAutomation.box_log, 'a')
@@ -360,6 +381,7 @@ if __name__ == '__main__':
         start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
         start.start_up()
+        print("asdasdasdasdadads")
         start.remove_archive()
         start.parse_box_log()
 
@@ -378,7 +400,8 @@ if __name__ == '__main__':
                 print('I ma inside of the decorator function, the name of tested_os: ', tested_os)
                 test(tested_os)
                 return True
-            except Exception:
+            except:   #remove Exception. Now simple except is used
+                print('In Exception of the letstry()')
                 return False
 
         #@start.executor.retry()
@@ -397,11 +420,14 @@ if __name__ == '__main__':
                 # p.start()
             p = Pool(processes=3)
             r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list
-
+            print('This is process %s',r)
             #r.wait()
         except KeyboardInterrupt:
+            print('%s' % (traceback.format_exc()))
             p.join()
             p.terminate()
+        finally:
+            p.close()
 
     else:
         print('I am in SingleProcess')
