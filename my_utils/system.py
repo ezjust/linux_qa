@@ -10,6 +10,29 @@ import sys
 import paramiko
 
 
+
+def retry_simple(function):
+    def wrapper(*args, **kwargs):
+        # Needs to test the case, when function is True from the first try, than here we need to return
+        counter = 0
+        result = False  # default result is set to False, to start new cycle
+        while not result and counter < 10:
+            try:
+                if function(*args, **kwargs):
+                    result = True
+                else:
+                    result = False
+                    time.sleep(20)  # timeout between retries
+                    print('Failed itteration')
+            except:
+                print('I am in except block')
+                pass
+
+            counter = counter + 1  # increment of the counyer
+
+    return wrapper
+
+
 def retry_call(num):
     '''The decorator is used to avoid some errors on the installation stage:
     TC build agent and during some period time agent may not be available. To avoid this we use decorator.
@@ -196,11 +219,11 @@ class Executor(object):
         # received by the run command, which will be repeated each time it fails until counter is less 10
         # We can use this run(cmd) function for all commands we would like to be used with retry
         try:
+            print(cmd)
             self.execute(cmd)
-            # print("Execute True")
             return True
         except Exception:
-            print("The error message is : %s" % self.error_message(cmd))
+            print(self.error_message(cmd))
             return False
 
     def get_logfile(self):
@@ -372,13 +395,18 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         link = 'https://s3.amazonaws.com/repolinux/' + build + '/repo-packages/rapidrecovery-repo-' + self.install_distname() + self.install_version() + '-' + self.machine_type() + '.' + self.install_packmanager()
         return link
 
+    @retry_call(10)
     def download_file(self):
-        filename = 'repo'
-        r = requests.get(self.create_link())
-        file = open(filename, 'wb')
-        for chunk in r.iter_content(100000):
-            file.write(chunk)
-        file.close()
+        try:
+            filename = 'repo'
+            package_link = self.create_link()
+            r = requests.get(package_link, stream=True)
+            with open(filename, 'wb') as file:
+                for chunk in r.iter_content(chunk_size=1024):
+                    file.write(chunk)
+            return True
+        except:
+            return False
 
     def run_repo_installer(self):
         install = "sudo " + self.packmanager() + " -i" + " repo"
@@ -388,44 +416,47 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
             self.run(cmd=update)
 
     def install_agent_fromrepo(self):
+        # @retry_call(num=20)
+        # def run(cmd):   # here we describe the decorator for the running command
+        #                 # on the installation process. 'cmd' is used to be parameter, which is
+        #                 # received by the run command, which will be repeated each time it fails until counter is less 10
+        #                 # We can use this run(cmd) function for all commands we would like to be used with retry
+        #     try:
+        #         print("I try this command %s ", cmd)
+        #         self.execute(cmd)
+        #         #print("Execute True")
+        #         return True
+        #     except Exception:
+        #         print("The error message is : %s" % self.error_message(cmd))
+        #         return False
+        #
+        #
+
         self.create_link()
         self.download_file()
-
-        @retry_call(num=20)
-        def run(cmd):   # here we describe the decorator for the running command
-                        # on the installation process. 'cmd' is used to be parameter, which is
-                        # received by the run command, which will be repeated each time it fails until counter is less 10
-                        # We can use this run(cmd) function for all commands we would like to be used with retry
-            try:
-                self.execute(cmd)
-                #print("Execute True")
-                return True
-            except Exception:
-                print("The error message is : %s" % self.error_message(cmd))
-                return False
 
         try:
             if self.check_installed_code_rapid() is 1:
 
                 install = "sudo " + self.packmanager() + " -i" + " repo"
-                self.execute(install)
+                self.run(cmd=install)
                 print('Repo installed')
             elif self.check_installed_code_rapid() not in [0, 1]:
                 raise Exception("Received not [0,1] result code for check rapid")
 
             if self.install_distname() == "sles":
                 clean_all = "sudo " + self.software_manager() + " clean -M"
-                run(cmd=clean_all)
+                self.run(cmd=clean_all)
                 installation = "sudo " + self.software_manager() + " --gpg-auto-import-keys" + " install" + " -y " + self.agent
-                run(cmd=installation)
+                self.run(cmd=installation)
 
             else:
                 update = "sudo " + self.software_manager() + " update -y"
-                run(cmd=update)
+                self.run(cmd=update)
                 clean_all = "sudo " + self.software_manager() + " clean all"
-                run(cmd=clean_all)
+                self.run(cmd=clean_all)
                 installation = "sudo " + self.software_manager() + " install" + " -y " + self.agent
-                run(cmd=installation)
+                self.run(cmd=installation)
 
             if not self.check_package_installed(cmd='rapidrecovery-agent', expected_result=True):
                 raise Exception('The rapidrecovery-agent is not installed')

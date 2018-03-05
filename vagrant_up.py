@@ -149,7 +149,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
                     elif box_distro_name in ('rhel', 'centos', 'sl', 'oracle'):
                         def install_rhel_preparation():
-                            if box_distro_name in ('oracle_69_x64'):
+                            if box_distro_name is ('oracle_69_x64'):
+                                exit(0)
                                 sudo('wget http://vault.centos.org/6.9/extras/Source/SPackages/centos-release-scl-rh-2-3.el6.centos.src.rpm', stdout=configuration_log)
                                 sudo('rpm -i centos-release-scl-rh-2-3.el6.centos.src.rpm', stdout=configuration_log)
                                 sudo('yum install -y yum-utils', stdout=configuration_log)
@@ -421,11 +422,11 @@ if __name__ == '__main__':
             p = Pool(processes=3)
             r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list
             print('This is process %s',r)
-            #r.wait()
+            p.close()
         except KeyboardInterrupt:
             print('%s' % (traceback.format_exc()))
-            p.join()
             p.terminate()
+            p.join()
         finally:
             p.close()
 
