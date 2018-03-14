@@ -19,6 +19,8 @@ import time
 import re
 import urllib
 import datetime
+import traceback
+
 import sys
 from vagrant_up import VagrantAutomation
 # driver.implicitly_wait(10) # seconds
@@ -71,11 +73,11 @@ class WebAgent(object):
                 self.driver.set_page_load_timeout(30) #stopped work in the newest firefox. Before was ok.
             except WebDriverException as e:
                 print(e)
-            #self.driver.implicitly_wait(30)
             self.driver.accept_untrusted_certs = True
             self.driver.assume_untrusted_cert_issuer = True
             self.driver.get(core_link)
-            # self.driver.refresh()
+            self.driver.implicitly_wait(30)
+            #self.driver.refresh()
         except Exception as e:
             print e
 
@@ -202,7 +204,7 @@ class WebAgent(object):
                     new = self.driver.find_element_by_xpath(
                         ".//*[@id='protectMachine']/a[1]")
             else:
-                print('7.0.0')
+                print('6.2.0')
                 print('test')
                 try:
                     WebDriverWait(self.driver, self.short_timeout).until(
@@ -403,26 +405,34 @@ class WebAgent(object):
             # WebDriverWait(self.driver, self.short_timeout).until(EC.visibility_of_element_located((By.XPATH, ".//*[@id='content']/div[2]/div[2]/div[1]/span")))
             apply = self.driver.find_element_by_id("protectionScheduleEditOK")
             apply.click()
+            self.wait_for_element_invisible(element_id="lpLoadingContent")
 
             print("Schedule is configured")
-            #print("HERE1")
+            print("HERE1")
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
             force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
             force_snapshot.click()
-            #print("HERE2")
+            print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            #print("HERE3")
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
-            first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
+            print("HERE3")
+            #WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")))
+            #first_force = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable(
+                (By.XPATH, "//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")))
+            first_force = self.driver.find_element_by_xpath(
+                "//*[@id='popup1']/div/div[6]/form/div[2]/button[3]")
+
+
             first_force.click()
-            #print("HERE4")
+            print("HERE4")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
+            #self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
             self.wait_for_element_invisible(element_id="lpLoadingContent")
-            #print("HERE5")
+            print("HERE5")
 
         except Exception:
             print("HERE")
+            traceback.print_exc()
             print Exception
             raise Exception
 
@@ -477,8 +487,18 @@ class WebAgent(object):
                     ".//*[@id='popup1']/div/div[6]/form/div[2]/button[2]")
                 force_base_image.click()
                 # print("HERE4")
+                '''Question about Force Base Image. First time seen in 7.1.0 branch'''
+                force_base_image = self.driver.find_element_by_id('msgbox-message-header')
+
+                if "Force Base Image" in force_base_image.text:
+                    self.driver.find_element_by_xpath('//*[@id="1"]').click()
+                    print('Clicked on the Force Base Image')
+                else:
+                    print(force_base_image.text)
+                print('Waiting before')
+
                 self.wait_for_element_invisible(element_id="lpLoadingContent")
-                self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
+                #self.driver.find_element_by_class_name("btn-container").send_keys(Keys.ENTER)
 
             self.wait_for_element_invisible(element_id="lpLoadingContent")
             # print("HERE5")
@@ -1133,7 +1153,7 @@ class WebAgent(object):
 
         ip_addr = self.driver.find_element_by_id("authenticationKey")
         ip_addr.send_keys(self.pass_cd)
-
+        print('Testplace-3')
         WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         next = self.driver.find_element_by_id("btnWizardDefault")
         next.click()
@@ -1146,7 +1166,7 @@ class WebAgent(object):
         #print(popup.is_enabled())
         # print(popup)
         #print(popup.text)
-
+        print('Testplace-2')
         '''Popup.text may have empty string.'''
         if "Dynamic disks will be converted into basic during restoration" in popup.text:
 
@@ -1166,20 +1186,40 @@ class WebAgent(object):
             EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
         next = self.driver.find_element_by_id("btnWizardDefault")
         next.click()
+        print('Testplace-1')
+        '''Warning about something appears here, at least on the 6.2.0 is seen. Investigating.'''
 
-        WebDriverWait(self.driver, self.short_timeout).until(
-            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
-        next = self.driver.find_element_by_id("btnWizardDefault")
-        next.click()
+        self.wait_for_element_invisible("lpLoadingContent")
 
-        WebDriverWait(self.driver, self.short_timeout).until(
-            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
-        next = self.driver.find_element_by_id("btnWizardDefault")
-        next.click()
 
+        '''IMPORTANT! I understand that this operation will overwrite selected volumes with the data from the selected recovery point.'''
         WebDriverWait(self.driver, self.short_timeout).until(EC.presence_of_element_located((By.ID, "isIUnderstand")))
         self.driver.find_element_by_id("isIUnderstand").click()
         time.sleep(2)
+        '''IMPORTANT! I understand that this operation will overwrite selected volumes with the data from the selected recovery point.'''
+
+
+
+
+        '''Finish in the Summary tab'''
+        WebDriverWait(self.driver, self.short_timeout).until(
+            EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        next = self.driver.find_element_by_id("btnWizardDefault")
+        next.click()
+        print('Testplace0')
+        '''Finish in the Summary tab'''
+        #self.wait_for_element_invisible("lpLoadingContent")
+
+        # if build_agent is "7.1.0":
+        #     '''Seems like this step is missed in the 6.2.0 Needs to be checked.'''
+        #     WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
+        #     next = self.driver.find_element_by_id("btnWizardDefault")
+        #     next.click()
+        #     print('Testplace1')
+
+
+
+        print('Testplace2')
 
         WebDriverWait(self.driver, self.short_timeout).until(
             EC.element_to_be_clickable((By.ID, "btnWizardDefault")))
