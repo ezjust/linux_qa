@@ -696,12 +696,12 @@ class Agent(Repoinstall):
                 raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 180 sec did not help. Please investigate.")
             '''There is some time, needed for the correct start of the agent service'''
             counter = 0
-            while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 100:
+            while self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0 and counter < 240:
                 time.sleep(0.5)
                 counter = counter + 1
                 #print('waiting for the openssl')
             if self.error_code('echo YES | openssl s_client -connect localhost:8006') is not 0:
-                raise Exception("Exception: There is still not ability to connect to the 8006 port using openssl client."
+                raise Exception("Exception: There is still no ability to connect to the 8006 port using openssl client. The timeout in 120sec did not help."
                                 "Error code is %s" % self.error_code('echo YES | openssl s_client -connect localhost:8006'))
 
     def bsctl_hash(self):
