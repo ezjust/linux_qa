@@ -148,7 +148,7 @@ class Executor(object):
         elif err is 100:
             count = 0
             # print('This is err %s' % err)
-            while err is 100:
+            while err is 100 and count < 10:
 
                 p = subprocess.Popen(self.cmd, shell=True,
                                      stdout=subprocess.PIPE,

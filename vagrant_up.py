@@ -192,7 +192,13 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         #print('zypper install -n ' + self.sles_packages)
                         try:
                             sudo('zypper clean -M', stdout=configuration_log)
+                            sudo("zypper repos | grep SP2 && sudo zypper repos | grep SP2 | awk {'print $3'} | xargs sudo zypper rr || echo 'No repository for SP2 was found. Skipped.'")
                             sudo('zypper ar http://download.opensuse.org/repositories/devel:/languages:/python/SLE_12_SP2/ python', stdout=configuration_log)
+
+                            '''For the SLES 11 SP3 the valid link is :
+                            sudo zypper ar http://ftp.gwdg.de/pub/linux/misc/packman/suse/11.3/ packman
+                            '''
+
                             #sudo('zypper ar http://download.opensuse.org/tumbleweed/repo/oss/ oss')
                             sudo('zypper --no-gpg-checks install -n -y ' + self.sles_packages, stdout=configuration_log)
                             sudo('pip install ' + self.pip_packages, stdout=configuration_log)
@@ -250,13 +256,13 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
                 if self.run_web:
                     if self.run_configurator:
-                        sudo('wget https://raw.github.com/mbugaiov/myrepo/master/configurator.sh')
+                        sudo('wget https://raw.github.com/mbugaiov/linux-qa-scripts/master/configurator.sh')
                         sudo('chmod +x ./configurator.sh')
                         sudo('./configurator.sh --install --disk=/dev/sdb,/dev/sdc,/dev/sdd,/dev/sde,/dev/sdf', stdout=configuration_log)
                         run('lsblk')
                     if self.install_agent:
                         sudo(
-                        'wget https://raw.github.com/mbugaiov/myrepo/master/agent_install.sh')
+                        'wget https://raw.github.com/mbugaiov/linux-qa-scripts/master/agent_install.sh')
                         sudo('chmod +x ./agent_install.sh')
                         sudo('./agent_install.sh --install --branch=' + self.build_agent,
                         stdout=installation_agent_log)
