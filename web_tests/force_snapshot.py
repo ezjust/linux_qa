@@ -12,7 +12,7 @@ class ForceSnapshot(WebAgent):
         self.open_core_ui()
 
     def tearDown(self):
-        self.driver.get_screenshot_as_file(filename="/tmp/snapshot_image")
+        self.driver.get_screenshot_as_file(filename="/tmp/snapshot_image.png")
         self.remove_agent_by_id(ip_machine)
         self.driver.close()
 

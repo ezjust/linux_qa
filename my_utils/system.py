@@ -50,6 +50,7 @@ def retry_call(num):
                 else:
                     result = False
                     time.sleep(20) # timeout between retries
+                    print('Retry %s' % counter)
 
                 counter = counter + 1  # increment of the counyer
 
@@ -213,7 +214,7 @@ class Executor(object):
         (output, err) = p.communicate()
         return (err)
 
-    @retry_call(10)
+    @retry_call(20)
     def run(self, cmd):  # here we describe the decorator for the running command
         # on the installation process. 'cmd' is used to be parameter, which is
         # received by the run command, which will be repeated each time it fails until counter is less 10
@@ -395,7 +396,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         link = 'https://s3.amazonaws.com/repolinux/' + build + '/repo-packages/rapidrecovery-repo-' + self.install_distname() + self.install_version() + '-' + self.machine_type() + '.' + self.install_packmanager()
         return link
 
-    @retry_call(10)
+    @retry_call(15)
     def download_file(self):
         try:
             filename = 'repo'
