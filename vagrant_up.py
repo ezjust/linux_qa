@@ -482,8 +482,8 @@ if __name__ == '__main__':
         for i in failed_array:
             print(i)
         raise Exception("There are failed tests.")
-
-    print("Testing completed with no errors")
+    else:
+        print("Testing completed with no errors")
     #start.close_log()
 
 
