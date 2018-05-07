@@ -130,8 +130,9 @@ class Executor(object):
             raise ValueError('The package manager of the system is not recognized')
 
 
-    def execute(self, cmd=None):
+    def execute(self, cmd=None, debug=None):
         # type: (object) -> object
+        self.debug = debug
         if cmd is not None:
             self.cmd = cmd
         p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
@@ -184,8 +185,8 @@ class Executor(object):
                 count+=1
                 if 'remove' in self.cmd:
                     break
-
-
+        if self.debug:
+            print output
             return (output, err)
         else:
             return (output, err)
@@ -218,6 +219,21 @@ class Executor(object):
         p.wait()
         (output, err) = p.communicate()
         return (err)
+
+    def unix_message(self, cmd=None, debug=None):
+        # type: (object) -> object
+        if cmd is not None:
+            self.cmd = cmd
+            self.debug = debug
+        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+                             stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        #((output, err), code)
+        p.wait()
+        output = p.communicate()
+        output = output[0]
+        if self.debug:
+            print output
+        return output
 
     @retry_call(20)
     def run(self, cmd):  # here we describe the decorator for the running command
@@ -298,6 +314,7 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     execute = __ex.execute
     error_code = __ex.error_code
     error_message = __ex.error_message
+    unix_message = __ex.unix_message
     run = __ex.run
 
 

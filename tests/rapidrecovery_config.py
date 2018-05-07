@@ -22,6 +22,11 @@ class RapidrecoveryConfig(Agent):
             if self.install_distname() in ["ubuntu", "debian"]:
                 self.file_exists(result=True, file=config)
                 self.file_exists(result=False, file=configuration_log)
+                if 'inactive' in self.unix_message(cmd='ufw status', debug=True):
+                    self.execute('echo yes | ufw enable', debug=True)
+                    print('Here')
+                else:
+                    print('UFW status not-inactive')
                 self.rapidrecovery_config_api(port="8006", user="vagrant", method="ufw", build="all", start=True)
 
             elif self.install_distname() in ["rhel", "centos", "oracle"]:
