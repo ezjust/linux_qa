@@ -392,20 +392,23 @@ if __name__ == '__main__':
         start.remove_archive()
         start.parse_box_log()
 
-    if start.run_test and start.multiprocess and not start.run_web:
+    if start.run_test and start.multiprocess and not start.run_web:  # run_web is not elighable for the parallel. Probably BMR only.
         print('I am in Multiprocess')
         p = None
         #global tested_os
         #tested_os = None
         #for vm in start.os_list:
-        print("STARTOSLIST ", start.os_list)
+        print("STARTOSLIST ", start.os_list) # here we get the list of the machines we need to run tests on
         #p_obj=[]
 
         @retry_call(3)
         def letstry(tested_os):
+            '''letstry - is the function, which run the test(vm) function several times(retry_call decorator does it).
+            True/False are used to communicate with the decorator'''
+
             try:
                 print('I ma inside of the decorator function, the name of tested_os: ', tested_os)
-                test(tested_os)
+                test(tested_os) # run the test(vm) function, which is working with the vagrant machine
                 return True
             except:   #remove Exception. Now simple except is used
                 print('In Exception of the letstry()')
@@ -413,22 +416,25 @@ if __name__ == '__main__':
 
         #@start.executor.retry()
         def process_file_wrapped(vm):
+            """This function we use in Pool.map for multiprocess. In case of the exception in the test(vm) ->
+             letsry(tested_os) will be called and letsry(tested_os) used decorator to repeat it).
+             This is needed for the vagrant machines. Sometimes network issues/etc interrupts the connection"""
             try:
-                global tested_os
+                global tested_os  # global variable is used to use it in other function, letstry(tested_os)
                 tested_os = vm # will be used to shift the vm name
                 test(vm)
             except:
                 print('%s: %s' % (vm, traceback.format_exc()))
                 print('I am in Exception of the Multiprocess. Needs to be rerun by the decorator.')
-                letstry(tested_os)
+                letstry(tested_os)   # decorated function will be used to repeat the start of the vagrant box
         try:
             #for vm in start.os_list:
                 # p = Process(target=test, args=(vm,))
                 # p.start()
             p = Pool(processes=3)
-            r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list
+            r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list. Start.os_lisst is the argument to the process_file_wrapped.
             print('This is process %s',r)
-            p.close()
+            p.close()   # this line seems not needed if we have the same in finally block.
         except KeyboardInterrupt:
             print('%s' % (traceback.format_exc()))
             p.terminate()
@@ -440,7 +446,7 @@ if __name__ == '__main__':
         print('I am in SingleProcess')
         for vm in start.os_list:
             start.save_vmname(vm) # save the name of the running instance, needs to be used in web tests.
-            test(vm)
+            test(vm)  # Simple run of the test(vm) function.
 
 
 
@@ -476,8 +482,8 @@ if __name__ == '__main__':
         for i in failed_array:
             print(i)
         raise Exception("There are failed tests.")
-
-    print("Testing completed with no errors")
+    else:
+        print("Testing completed with no errors")
     #start.close_log()
 
 
