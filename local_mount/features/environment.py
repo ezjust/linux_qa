@@ -26,9 +26,9 @@ unix = Execute()
 def before_feature(context, feature):
     unix.execute('wget https://raw.github.com/mbugaiov/linux-qa-scripts/master/agent_install.sh', debug=False)
     unix.execute('chmod +x ./agent_install.sh', debug=False)
-    unix.execute('sudo ./agent_install.sh --install --branch=7.1.0', debug=False)
+    unix.execute('sudo ./agent_install.sh --install --branch=7.1.0 --kernel=current', debug=False)
 
 def after_feature(context, feature):
     unix.execute('sudo ./agent_install.sh --clean', debug=False)
     unix.execute('rm -rf repo*', debug=False)
-    unix.execute('rm -rf agent_install.sh', debug=False)
+    unix.execute('rm -rf agent_install.sh*', debug=False)

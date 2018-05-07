@@ -162,9 +162,13 @@ class Executor(object):
                 # error_code = p.communicate()[0]
                 print("%s :: I am in %s retry. 100 error core is received for '%s' command" % (time.ctime(), count, self.cmd))
                 print('.')
-                count+=1
                 time.sleep(60)
                 if 'install' in self.cmd or 'update' in self.cmd:
+
+                    '''There are cases, when update/install may not work 
+                    due to already running system process by apt.
+                    TODO: Inevstigate is it needed for other distro.'''
+
                     clean_all = self.package_manager() + " clean all"
                     self.execute(cmd=clean_all)
                     find_all_apt = "ps -A | grep apt | awk '{print $1}'"
@@ -177,6 +181,7 @@ class Executor(object):
                             self.execute(kill)
                     if self.error_code(cmd=self.package_manager() + " update") is 0:
                         self.execute(cmd=self.package_manager() + " update")
+                count+=1
                 if 'remove' in self.cmd:
                     break
 
