@@ -98,6 +98,23 @@ class VagrantAutomation(SystemUtils, TestRunner):
         # paramiko_logger = logging.getLogger("paramiko.transport")
         # paramiko_logger.disabled = True
 
+        box_distro = self.box_distro_name.split('_')
+        box_distro_name = box_distro[0]
+
+        @retry_call(2)
+        def prepare_deb():
+            try:
+                clean = "echo `ps -A | grep apt | awk '{print $1}'`"
+                result_clean = run(clean)
+                if len(result_clean) is not 0:
+                    sudo(stderr=False, command='kill -9 ' + result_clean)
+                sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
+                sudo('apt-get update', stdout=configuration_log)
+                sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+            except Exception as e:
+                print(e)
+
+
         if self.vagrant_up:
             try:
                 v.up(vm_name=self.box_distro_name)
@@ -127,23 +144,8 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
             with settings(timeout=30, connection_attempts=5, no_agent=True, allow_agent=False,look_for_keys=False, host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True, warn_only=True):
                 try:
-                    box_distro = self.box_distro_name.split('_')
-                    box_distro_name = box_distro[0]
                     print("Install environment is in progress...")
                     if box_distro_name in ('ubuntu', 'debian'):
-
-                        @retry_call(2)
-                        def prepare_deb():
-                            try:
-                                clean = "echo `ps -A | grep apt | awk '{print $1}'`"
-                                result_clean = run(clean)
-                                if len(result_clean) is not 0:
-                                    sudo(stderr=False, command='kill -9 ' + result_clean)
-                                sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
-                                sudo('apt-get update', stdout=configuration_log)
-                                sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
-                            except Exception as e:
-                                print(e)
 
                         try:
                             prepare_deb()
@@ -238,6 +240,11 @@ class VagrantAutomation(SystemUtils, TestRunner):
 
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
+                '''The case, when reload was applied, there is still chanse apt will be running by the system update'''
+                if self.reload_vm:
+                    if box_distro_name in ('ubuntu', 'debian'):
+                        prepare_deb()
+                        
                 sudo('uname -r')
                 run('[ -f /etc/default/locale ] && sudo sed -i "/LANG=/c\LANG="en_GB.UTF-8"" /etc/default/locale || echo "No locale file was found. Skipped."')   # set the language to english for all machines.
                 if self.run_test:
