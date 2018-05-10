@@ -594,11 +594,8 @@ class WebAgent(object):
                     'a')
                 for elem in set_of_machine:
                     test = elem.get_attribute('href')
-                    if elem.text in self.ip:
+                    if self.ip in elem.text:
                         agent_link = test
-
-                        # id = re.split('Machines/*', agent_link)[1]
-                        # print("AGENT LINK", agent_link)
 
             except StaleElementReferenceException:
                 pass

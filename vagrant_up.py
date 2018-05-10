@@ -4,6 +4,7 @@ from my_utils.system import SystemUtils, retry_call
 import vagrant
 from fabric.api import *
 from fabric.network import disconnect_all
+import logging
 import os
 import re
 import tarfile
@@ -91,7 +92,12 @@ class VagrantAutomation(SystemUtils, TestRunner):
         """Starts the specified machine using vagrant"""
         #self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
-        #
+
+        # below option prevents pramiko transport error. They appears in paramoki==2.4.1 version. Current paramiko==2.2.1
+        # logging.basicConfig()
+        # paramiko_logger = logging.getLogger("paramiko.transport")
+        # paramiko_logger.disabled = True
+
         if self.vagrant_up:
             try:
                 v.up(vm_name=self.box_distro_name)
@@ -233,6 +239,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
         with settings(host_string= v.user_hostname_port(vm_name=self.box_distro_name), key_filename = v.keyfile(vm_name=self.box_distro_name), disable_known_hosts = True):
             try:
                 sudo('uname -r')
+                run('[ -f /etc/default/locale ] && sudo sed -i "/LANG=/c\LANG="en_GB.UTF-8"" /etc/default/locale || echo "No locale file was found. Skipped."')   # set the language to english for all machines.
                 if self.run_test:
                     try:
                         self.create_tar(work_path)
@@ -243,6 +250,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         run("cd " + box_work_path, stdout=configuration_log)
                         file_to_write = 'Logs/Log.log'
                         run("echo Running tests on the : %s >> %s" % (self.box_distro_name, file_to_write))
+                        run('whoami')
                         run("sudo /usr/bin/python2.7 test_main.py")
                         self.clean_log(name='tmp/Log.log')
                         get('Logs/Log.log', '/tmp/Log.log')
@@ -432,7 +440,7 @@ if __name__ == '__main__':
                 # p = Process(target=test, args=(vm,))
                 # p.start()
             p = Pool(processes=3)
-            r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list. Start.os_lisst is the argument to the process_file_wrapped.
+            r = p.map(process_file_wrapped, start.os_list) # was test, start.os_list. Start.os_list is the argument to the process_file_wrapped.
             print('This is process %s',r)
             p.close()   # this line seems not needed if we have the same in finally block.
         except KeyboardInterrupt:
@@ -457,12 +465,9 @@ if __name__ == '__main__':
     #     while pid.is_alive():
     #         time.sleep(5)
 
-    print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-
-
     #parent_conn.recv()
     #p.join()
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
     if start.run_web:
         #start.parse_installation_agent_log()
         pass
