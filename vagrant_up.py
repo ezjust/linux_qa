@@ -294,7 +294,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                             else:
                                 self.write_cfg(ipaddr=ipaddr)
                                 time.sleep(5)
-                                os.system("sudo /usr/bin/python2.7 web_runner.py")
+                                os.system("/usr/bin/python2.7 web_runner.py")
                                 print("Testing is completed")
                         except Exception:
                             self.testing_result = False
