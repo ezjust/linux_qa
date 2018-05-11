@@ -244,7 +244,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                 if self.reload_vm:
                     if box_distro_name in ('ubuntu', 'debian'):
                         prepare_deb()
-                        
+
                 sudo('uname -r')
                 run('[ -f /etc/default/locale ] && sudo sed -i "/LANG=/c\LANG="en_GB.UTF-8"" /etc/default/locale || echo "No locale file was found. Skipped."')   # set the language to english for all machines.
                 if self.run_test:
@@ -403,7 +403,6 @@ if __name__ == '__main__':
         start.write_in_box_log(vm + " tests are completed:" + '\n')
         start.read_cfg(box_distro_name=vm)
         start.start_up()
-        print("asdasdasdasdadads")
         start.remove_archive()
         start.parse_box_log()
 
@@ -422,7 +421,7 @@ if __name__ == '__main__':
             True/False are used to communicate with the decorator'''
 
             try:
-                print('I ma inside of the decorator function, the name of tested_os: ', tested_os)
+                print('I am inside of the decorator function, the name of tested_os: ', tested_os)
                 test(tested_os) # run the test(vm) function, which is working with the vagrant machine
                 return True
             except:   #remove Exception. Now simple except is used
