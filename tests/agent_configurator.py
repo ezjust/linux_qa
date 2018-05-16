@@ -19,13 +19,13 @@ class AgentConfigurator(Agent):
                  rapidrecovery-config were used, this file might be before start of the
                  test. Due to this we are checking that and remove.'''
         if os.path.isfile(self.configuration_log):
-            os.remove(self.configuration_log)
+            os.system("sudo rm -rf " + self.configuration_log)
         if os.path.isfile(self.agent_installation_log):
-            os.remove(self.agent_installation_log)
+            os.system("sudo rm -rf " + self.agent_installation_log)
         if os.path.isfile(self.apprecovery_log):
-            os.remove(self.apprecovery_log)
+            os.system("sudo rm -rf " + self.apprecovery_log)
         if os.path.isfile(self.bsctl_log):
-            os.remove(self.bsctl_log)
+            os.system("sudo rm -rf " + self.bsctl_log)
 
         self.install_agent_fromrepo()
 

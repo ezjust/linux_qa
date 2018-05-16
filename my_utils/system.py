@@ -225,12 +225,13 @@ class Executor(object):
         if cmd is not None:
             self.cmd = cmd
             self.debug = debug
-        p = subprocess.Popen(self.cmd, shell=True, stdout=subprocess.PIPE,
+        p = subprocess.Popen('export LANG=en_US.UTF-8; ' + self.cmd, shell=True, stdout=subprocess.PIPE,
                              stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         #((output, err), code)
         p.wait()
         output = p.communicate()
         output = output[0]
+        output = unicode(output, "utf8", errors="ignore")
         if self.debug:
             print output
         return output
@@ -512,13 +513,13 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
 
         if self.check_installed_code_rapid() is 0:
             if self.install_distname() == "sles":
-                uninstallation_agent = self.software_manager() + " remove" + " -y" + " " + self.agent
-                unistallation_other = self.software_manager() + " remove" + " -y" + " rapidrecovery-*"
-                uninstallation_nbd = self.software_manager() + " remove" + " -y" + " nbd"
+                uninstallation_agent = "sudo " + self.software_manager() + " remove" + " -y" + " " + self.agent
+                unistallation_other = "sudo " + self.software_manager() + " remove" + " -y" + " rapidrecovery-*"
+                uninstallation_nbd = "sudo " + self.software_manager() + " remove" + " -y" + " nbd"
             else:
-                uninstallation_agent = self.software_manager() + " -y" + " remove" + " " + self.agent
-                unistallation_other = self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
-                uninstallation_nbd = self.software_manager() + " -y" + " remove" + " nbd"
+                uninstallation_agent = "sudo " + self.software_manager() + " -y" + " remove" + " " + self.agent
+                unistallation_other = "sudo " + self.software_manager() + " -y" + " remove" + " rapidrecovery-*"
+                uninstallation_nbd = "sudo " + self.software_manager() + " -y" + " remove" + " nbd"
 
             if self.check_installed_code_rapid() is 0:
                 self.execute(cmd=uninstallation_agent)
@@ -547,17 +548,17 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
         # print(self.install_version())
         version = self.install_version()
         if version is "6":
-            uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
+            uninstallation_dkms = "sudo " + self.software_manager() + " -y" + " remove" + " dkms"
             execute.execute(uninstallation_dkms)
         else:
             # print("I am in else statement")
             if self.install_distname() != "sles":
                 autoremove = "sudo " + self.software_manager() + " -y" + " autoremove"
-                uninstallation_dkms = self.software_manager() + " -y" + " remove" + " dkms"
+                uninstallation_dkms = "sudo " + self.software_manager() + " -y" + " remove" + " dkms"
                 execute.execute(autoremove)
                 execute.execute(uninstallation_dkms)
             else:
-                uninstallation_dkms = self.software_manager() + " remove" + " -y" + " dkms"
+                uninstallation_dkms = "sudo " + self.software_manager() + " remove" + " -y" + " dkms"
                 execute.execute(uninstallation_dkms)
 
 
@@ -710,11 +711,11 @@ class Agent(Repoinstall):
             self.status_of_the_service('rapidrecovery-agent', 0)
 
             counter = 0
-            while self.error_code('netstat -anp | grep mono') is not 0 and counter < 180:
+            while self.error_code('sudo netstat -anp | grep mono') is not 0 and counter < 180:
                 time.sleep(1)
                 counter = counter + 1
             print('Stage1')
-            if self.error_code('netstat -anp | grep mono') is not 0:
+            if self.error_code('sudo netstat -anp | grep mono') is not 0:
                 print(self.error_code('netstat -anp | grep mono'))
                 raise Exception("EXCEPTION: Agent service is not listening the port. Retry in 180 sec did not help. Please investigate.")
             '''There is some time, needed for the correct start of the agent service'''
@@ -743,11 +744,11 @@ class Agent(Repoinstall):
 
     def unload_module(self):
         if self.error_code(self.check_module_is_loaded) is 0:
-            self.execute('rmmod ' + self.module_name)
+            self.execute('sudo rmmod ' + self.module_name)
 
     def load_module(self):
         if self.error_code(self.check_module_is_loaded) is not 0:
-            self.execute('modprobe' + self.module_name)
+            self.execute('sudo modprobe' + self.module_name)
 
     def rapidrecovery_vss_installed(self):
         result = self.execute(self.rapid_vss_installed)[0][0].rstrip()
@@ -782,7 +783,7 @@ class Agent(Repoinstall):
             self.delete_user = delete_user
         if snapper:
             self.snapper = snapper
-        config = "/usr/bin/rapidrecovery-config"
+        config = "sudo /usr/bin/rapidrecovery-config"
         try:
             if port:
                 self.execute(cmd=config + " -p " + self.port)

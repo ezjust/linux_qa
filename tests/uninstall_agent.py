@@ -22,6 +22,7 @@ class UninstallAgent(Repoinstall):
                                      expected_result=False) # There might to be a bug in the newest Ubuntu versions when agent is listed as installed due to configuration files.
 
         self.uninstall_autoremove()
+        print('Autoremove')
         self.check_package_installed('dkms', expected_result=False) # dkms should be removed after autoremove
 
     def tearDown(self):

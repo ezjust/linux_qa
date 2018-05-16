@@ -33,6 +33,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
     env.password = "vagrant"
     testing_result = None
     cp = ConfigParser.ConfigParser()
+    #logging.raiseExceptions = False
 
     def write_cfg(self, ipaddr, **kwargs):
         config = ConfigParser.ConfigParser()
@@ -93,10 +94,10 @@ class VagrantAutomation(SystemUtils, TestRunner):
         #self.create_tar(work_path)
         v = vagrant.Vagrant(out_cm=log_cm, err_cm=log_cm)
 
-        # below option prevents pramiko transport error. They appears in paramoki==2.4.1 version. Current paramiko==2.2.1
-        # logging.basicConfig()
-        # paramiko_logger = logging.getLogger("paramiko.transport")
-        # paramiko_logger.disabled = True
+        # below option prevents pramiko transport error. They appears in paramiko==2.4.1 version. Current paramiko==2.2.1
+        logging.basicConfig()
+        paramiko_logger = logging.getLogger("paramiko.transport")
+        paramiko_logger.disabled = True
 
         box_distro = self.box_distro_name.split('_')
         box_distro_name = box_distro[0]
@@ -111,8 +112,11 @@ class VagrantAutomation(SystemUtils, TestRunner):
                 sudo("sed -i -e 's/zesty/artful/g' /etc/apt/sources.list", stdout=configuration_log)
                 sudo('apt-get update', stdout=configuration_log)
                 sudo('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + self.deb_packages, stdout=configuration_log)
+                return True # this key is needed by the retry_call
             except Exception as e:
+                print('Got exception')
                 print(e)
+                return False # this key is needed by the retry_call
 
 
         if self.vagrant_up:
@@ -246,7 +250,7 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         prepare_deb()
 
                 sudo('uname -r')
-                run('[ -f /etc/default/locale ] && sudo sed -i "/LANG=/c\LANG="en_GB.UTF-8"" /etc/default/locale || echo "No locale file was found. Skipped."')   # set the language to english for all machines.
+                run('[ -f ~/.bashrc ] && sudo echo export LANG=en_US.utf8 >> ~/.bashrc; source ~/.bashrc || echo "No ~/.bashrc file was found. Skipped."')   # set the language to english for all machines.
                 if self.run_test:
                     try:
                         self.create_tar(work_path)
@@ -258,10 +262,10 @@ class VagrantAutomation(SystemUtils, TestRunner):
                         file_to_write = 'Logs/Log.log'
                         run("echo Running tests on the : %s >> %s" % (self.box_distro_name, file_to_write))
                         run('whoami')
-                        run("sudo /usr/bin/python2.7 test_main.py")
-                        self.clean_log(name='tmp/Log.log')
-                        get('Logs/Log.log', '/tmp/Log.log')
-                        with open('/tmp/Log.log', "r") as input:
+                        run("/usr/bin/python2.7 test_main.py")
+                        self.clean_log(name='/tmp/Log.log')   #'/tmp/Log.log'
+                        get('Logs/Log.log', '/tmp/Log.log')   #'/tmp/Log.log'
+                        with open('/tmp/Log.log', "r") as input:    #'/tmp/Log.log'
                             with open("result.log", 'a+') as output:
                                 for line in input:
                                     output.write(line)

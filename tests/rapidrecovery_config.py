@@ -22,8 +22,9 @@ class RapidrecoveryConfig(Agent):
             if self.install_distname() in ["ubuntu", "debian"]:
                 self.file_exists(result=True, file=config)
                 self.file_exists(result=False, file=configuration_log)
-                if 'inactive' in self.unix_message(cmd='ufw status', debug=True):
-                    self.execute('echo yes | ufw enable', debug=True)
+                self.unix_message(cmd='sudo ufw status', debug=True)
+                if 'inactive' in self.unix_message(cmd='sudo ufw status', debug=True):
+                    self.execute('echo yes | sudo ufw enable', debug=True)
                     print('Here')
                 else:
                     print('UFW status not-inactive')
