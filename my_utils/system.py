@@ -566,9 +566,9 @@ class Repoinstall(SystemUtils): # this class should resolve all needed informati
     def uninstall_repo(self):
         #execute = Executor()
         if self.install_distname() == "sles":
-            uninstallation_repo = self.software_manager() + " remove" + " -y " + self.repo
+            uninstallation_repo = "sudo " + self.software_manager() + " remove" + " -y " + self.repo
         else:
-            uninstallation_repo = self.software_manager() + " remove" + " " + self.repo
+            uninstallation_repo = "sudo " + self.software_manager() + " remove" + " " + self.repo
         self.execute(uninstallation_repo)
 
     def get_process_pid(self, cmd):
