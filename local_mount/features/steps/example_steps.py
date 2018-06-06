@@ -26,19 +26,6 @@ def step(context, selector, value):
 def step(context, title):
     assert context.browser.title == title
 
-@then('search site text "{site}" and click')
-def step(context, site):
-    result = context.browser.find_elements_by_partial_link_text('Толстанова Галина Александровна - Врач')
-    for i in result:
-        context.browser.get(url=i.get_attribute("href"))
-        time.sleep(1)
-        try:
-            assert context.browser.title == 'Толстанова Галина Александровна - Врач акушер-гинеколог. Лапароскопия, Гистероскопия в Киеве.'.decode(
-                'utf-8')
-        except AssertionError:
-            print(context.browser.title)
-
-
 @then('close')
 def close(context):
     context.browser.quit()
