@@ -67,8 +67,8 @@ class WebAgent(object):
             # from pyvirtualdisplay import Display
             # display = Display(visible=0, size=(800, 600))
             # display.start()
-
-            self.driver = webdriver.Firefox()
+	    
+            self.driver = webdriver.Firefox(executable_path='/usr/local/bin/geckodriver', firefox_binary='/opt/firefox/firefox') 
             try:
                 self.driver.set_page_load_timeout(30) #stopped work in the newest firefox. Before was ok.
             except WebDriverException as e:
@@ -409,8 +409,8 @@ class WebAgent(object):
 
             print("Schedule is configured")
             print("HERE1")
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
-            force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[7]/a/span")))
+            force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[7]/a/span")
             force_snapshot.click()
             print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
@@ -465,8 +465,8 @@ class WebAgent(object):
                 time.sleep(10)
 
             # print("HERE1")
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")))
-            force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[6]/a/span")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[7]/a/span")))
+            force_snapshot = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[7]/a/span")
             force_snapshot.click()
             # print("HERE2")
             self.wait_for_element_invisible(element_id="lpLoadingContent")
@@ -546,8 +546,8 @@ class WebAgent(object):
 
             self.find_last_job_id()
 
-            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")))
-            remove_agent = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[10]/a")
+            WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[11]/a")))
+            remove_agent = self.driver.find_element_by_xpath(".//*[@id='machineDetailesToolbar_" + self.id_agent + "']/ul/li[11]/a")
             remove_agent.click()
             time.sleep(2)
             WebDriverWait(self.driver, self.short_timeout).until(EC.element_to_be_clickable((By.XPATH, ".//*[@id='DeleteRecoveryPoints']")))
