@@ -17,7 +17,7 @@ class RapidrecoveryConfig(Agent):
     def runTest(self):
 
         config = "/usr/bin/rapidrecovery-config"
-        configuration_log = "/var/log/apprecovery/configuration.log"
+        configuration_log = "/var/log/apprecovery/configuration_tmp.log"
         try:
             if self.install_distname() in ["ubuntu", "debian"]:
                 self.file_exists(result=True, file=config)
