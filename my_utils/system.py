@@ -819,7 +819,7 @@ class Agent(Repoinstall):
 
 
     def parse_configuration_log(self):
-        configuration_log = "/var/log/apprecovery/configuration.log"
+        configuration_log = "/var/log/apprecovery/configuration_tmp.log"
         try:
             with open(configuration_log, 'r') as f:
                 words = ["Failed", "Error", "8006"]
